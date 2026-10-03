@@ -1,0 +1,12 @@
+/build/
+*.dll
+*.dmp
+*.exe
+*.log
+*.so
+__pycache__/
+.pytest_cache/
+node_modules/
+/.omc/*
+!/.omc/skills/
+/docs/handoff-codex.md

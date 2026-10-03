@@ -1,0 +1,99 @@
+name: "Compatibility report or request / 兼容性反馈或需求"
+description: "Share your setup, result or compatibility request / 分享使用环境、测试结果或兼容性需求"
+title: "[Compatibility / 兼容性] "
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Tell us about your Ubuntu host, controller and the steps you tried.
+        Before submitting this public report, remove account/device identifiers and private data.
+
+        欢迎分享 Ubuntu 主机、控制端环境和操作步骤。
+        内容会公开，提交前请去掉账号、设备标识和私人数据。
+
+  - type: dropdown
+    id: report_kind
+    attributes:
+      label: "Result or request / 反馈类型"
+      description: "Choose the result you observed or the compatibility you need. / 选择实际观察到的结果，或希望支持的环境。"
+      options:
+        - "Tested: works / 已测试：可用"
+        - "Tested: partly works or is unstable / 已测试：部分可用或不稳定"
+        - "Tested: does not work / 已测试：不可用"
+        - "Not tested: requesting compatibility assessment / 未测试：请求兼容性评估"
+    validations:
+      required: true
+
+  - type: input
+    id: host
+    attributes:
+      label: "Ubuntu host / Ubuntu 主机"
+      description: "Give Ubuntu release, desktop version, session type and CPU architecture. / 填写 Ubuntu、桌面版本、会话类型和 CPU 架构。"
+      placeholder: "Ubuntu 24.04; GNOME 46; Wayland, Xorg, or XRDP; x86-64"
+    validations:
+      required: true
+
+  - type: input
+    id: software
+    attributes:
+      label: "Bridge and UU versions / 桥接器与 UU 版本"
+      description: "Give your Plus version or commit and UU version; mark anything unknown. / 填写 Plus 版本或提交号及 UU 版本，不清楚的项请注明。"
+      placeholder: "Plus version or commit / Plus 版本或提交号; UU Remote 4.42.0.2770"
+    validations:
+      required: true
+
+  - type: input
+    id: controller
+    attributes:
+      label: "Controller / 控制端"
+      description: "Give the controller platform, OS version and UU app version. / 填写控制端平台、系统版本和 UU 应用版本。"
+      placeholder: "Mac or Android / Mac 或 Android; OS version / 系统版本; UU app version / UU 应用版本"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: areas
+    attributes:
+      label: "Affected area / 涉及功能"
+      description: "Select the features involved in your report. / 选择本次反馈涉及的功能。"
+      multiple: true
+      options:
+        - "Installation or startup / 安装或启动"
+        - "Connection or reconnection / 连接或重连"
+        - "Desktop video, resize, or cursor / 画面、缩放或光标"
+        - "Mouse / 鼠标"
+        - "Physical keyboard / 物理键盘"
+        - "Phone IME or Unicode text / 手机输入法或 Unicode 文本"
+        - "Clipboard / 剪贴板"
+        - "Audio / 音频"
+        - "Update or removal / 更新或卸载"
+        - "Other / 其他"
+    validations:
+      required: true
+
+  - type: textarea
+    id: need
+    attributes:
+      label: "Expected and observed result / 预期与实际结果"
+      description: |
+        Describe the steps, expected result and what happened, or the compatibility you need.
+        说明操作步骤、预期结果和实际表现，或希望支持的环境。
+      placeholder: |
+        Steps / 操作步骤：...
+        Expected / 预期结果：...
+        Observed / 实际表现：...
+      render: text
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: confirmation
+    attributes:
+      label: "Public-report confirmation / 公开提交确认"
+      description: "Confirm these two items before submitting. / 提交前请确认以下两项。"
+      options:
+        - label: "I searched open and closed issues and did not find the same configuration and result. / 我已搜索现有问题，没有发现相同配置和结果。"
+          required: true
+        - label: "I removed account/device identifiers and private data. / 我已去掉账号、设备标识和私人数据。"
+          required: true
