@@ -229,7 +229,7 @@ def load_manifests(paths: Sequence[Path] | None = None) -> tuple[ReleaseManifest
     selected = (
         [path.expanduser().resolve() for path in paths]
         if paths
-        else sorted(DEFAULT_MANIFEST_DIR.glob("*.json"))
+        else sorted(DEFAULT_MANIFEST_DIR.glob("uu-remote-*.json"))
     )
     if not selected:
         raise ManifestError("no approved release manifests were found")

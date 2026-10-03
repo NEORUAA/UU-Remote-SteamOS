@@ -7,6 +7,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 
 REPO_DIR = Path(__file__).resolve().parent.parent
@@ -16,6 +17,7 @@ from gameviewer_patchlib import (  # noqa: E402
     ManifestError,
     classify,
     load_manifest,
+    load_manifests,
     make_patched,
     manifest_from_dict,
     manifest_value,
@@ -126,6 +128,80 @@ class PatchToolingTests(unittest.TestCase):
         )
         self.assertEqual("4.33.0.8907", manifest.version)
         self.assertEqual(4, len(manifest.patches))
+
+    def test_repository_default_manifest_discovery(self) -> None:
+        versions = (
+            "4.33.0.8907",
+            "4.34.0.8979",
+            "4.39.1.1375",
+            "4.39.2.1561",
+            "4.42.0.2770",
+        )
+        manifests = load_manifests()
+        self.assertEqual(versions, tuple(item.version for item in manifests))
+        expected = [
+            f"{version}\tx86_64\t{REPO_DIR / 'patches' / f'uu-remote-{version}.json'}"
+            for version in versions
+        ]
+        listed = subprocess.run(
+            [
+                sys.executable,
+                str(REPO_DIR / "scripts" / "patch-gameviewer.py"),
+                "manifests",
+            ],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(0, listed.returncode, listed.stderr)
+        self.assertEqual(expected, listed.stdout.splitlines())
+
+    def test_default_discovery_rejects_invalid_and_draft_releases(self) -> None:
+        for field, value, message in (
+            ("schema_version", 2, "schema_version must be 1"),
+            ("review_status", "draft", "not 'approved'"),
+        ):
+            with self.subTest(field=field), tempfile.TemporaryDirectory() as temporary:
+                directory = Path(temporary)
+                (directory / "uu-remote-1-approved.json").write_text(
+                    json.dumps(self.raw), encoding="utf-8"
+                )
+                rejected = copy.deepcopy(self.raw)
+                rejected[field] = value
+                (directory / "uu-remote-2-rejected.json").write_text(
+                    json.dumps(rejected), encoding="utf-8"
+                )
+                with patch("gameviewer_patchlib.DEFAULT_MANIFEST_DIR", directory):
+                    with self.assertRaisesRegex(ManifestError, message):
+                        load_manifests()
+
+    def test_explicit_manifests_reject_invalid_and_draft_files(self) -> None:
+        for field, value, message in (
+            ("schema_version", 2, "schema_version must be 1"),
+            ("review_status", "draft", "not 'approved'"),
+        ):
+            with self.subTest(field=field), tempfile.TemporaryDirectory() as temporary:
+                manifest_path = Path(temporary) / "release.json"
+                rejected = copy.deepcopy(self.raw)
+                rejected[field] = value
+                manifest_path.write_text(json.dumps(rejected), encoding="utf-8")
+                with self.assertRaisesRegex(ManifestError, message):
+                    load_manifests([manifest_path])
+                result = subprocess.run(
+                    [
+                        sys.executable,
+                        str(REPO_DIR / "scripts" / "patch-gameviewer.py"),
+                        "manifests",
+                        "--manifest",
+                        str(manifest_path),
+                    ],
+                    check=False,
+                    capture_output=True,
+                    text=True,
+                )
+                self.assertEqual(1, result.returncode)
+                self.assertIn(message, result.stderr)
+                self.assertEqual("", result.stdout)
 
     def test_cli_enforces_expected_state(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

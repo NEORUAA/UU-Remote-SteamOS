@@ -60,12 +60,15 @@ jobs:
         run: /usr/bin/python3 -m unittest discover -s tests -v
 
       - name: Exercise the one-way controller clipboard boundary
+        shell: bash
         env:
           UURB_WINE_BIN: /usr/bin/wine
           UURB_WINEBOOT_BIN: /usr/bin/wineboot
-          UURB_WINESERVER_BIN: /usr/bin/wineserver
           WINEGCC: /usr/bin/winegcc
-        run: ./scripts/test-controller-clipboard.sh
+        run: |
+          wineserver_bin="$(dpkg-query -L wine64 | grep -E '/wineserver(64)?$')"
+          test -x "$wineserver_bin"
+          UURB_WINESERVER_BIN="$wineserver_bin" ./scripts/test-controller-clipboard.sh
 
       - name: Validate approved manifests
         run: python3 scripts/patch-gameviewer.py manifests
