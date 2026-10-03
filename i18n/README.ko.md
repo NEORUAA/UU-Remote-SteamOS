@@ -206,9 +206,9 @@ UU 계정 상태를 유지하면서 제거하려면:
 
 UU와 Ubuntu의 업데이트에 맞춰 Plus도 계속 다듬겠습니다. 후원은 새 버전 테스트, 개발 도구와 토큰 비용에 보탬이 되어 텍스트 입력, 복사·붙여넣기, 화질을 개선하는 데 쓰입니다.
 
-| PayPal | Alipay · CNY | AlipayHK · HKD | WeChat · 중국어 QR | WeChat · HKD |
+| PayPal | Alipay · CNY | AlipayHK · HKD | WeChat · CNY | WeChat · HKD |
 | :---: | :---: | :---: | :---: | :---: |
-| <a href="https://paypal.me/mirmirlin"><img src="../docs/images/support-paypal-en.png" alt="PayPal" width="160"></a> | <a href="../docs/images/support/alipay-cny.jpg"><img src="../docs/images/support-alipay-cny-en.png" alt="Alipay · CNY" width="160"></a> | <a href="../docs/images/support/alipay-hkd.png"><img src="../docs/images/support-alipay-hkd-en.png" alt="AlipayHK · HKD" width="160"></a> | <a href="../docs/images/support/wechat-zh.png"><img src="../docs/images/support-wechat-zh-en.png" alt="WeChat · 중국어 QR" width="160"></a> | <a href="../docs/images/support/wechat-en.png"><img src="../docs/images/support-wechat-en-en.png" alt="WeChat · HKD" width="160"></a> |
+| <a href="https://paypal.me/mirmirlin"><img src="../docs/images/support-paypal-en.png" alt="PayPal" width="160"></a> | <a href="../docs/images/support/alipay-cny.jpg"><img src="../docs/images/support-alipay-cny-en.png" alt="Alipay · CNY" width="160"></a> | <a href="../docs/images/support/alipay-hkd.png"><img src="../docs/images/support-alipay-hkd-en.png" alt="AlipayHK · HKD" width="160"></a> | <a href="../docs/images/support/wechat-zh.png"><img src="../docs/images/support-wechat-zh-en.png" alt="WeChat · CNY" width="160"></a> | <a href="../docs/images/support/wechat-en.png"><img src="../docs/images/support-wechat-en-en.png" alt="WeChat · HKD" width="160"></a> |
 
 <details>
 <summary>Alipay와 WeChat 결제 코드</summary>
@@ -217,7 +217,7 @@ UU와 Ubuntu의 업데이트에 맞춰 Plus도 계속 다듬겠습니다. 후원
 
 <p><a href="../docs/i18n/ko/support.md#alipay-hkd">AlipayHK HKD</a><br><a href="../docs/images/support/alipay-hkd.png"><img src="../docs/images/support/alipay-hkd.png" alt="AlipayHK HKD" width="240"></a></p>
 
-<p><a href="../docs/i18n/ko/support.md#wechat-zh">WeChat 중국어</a><br><a href="../docs/images/support/wechat-zh.png"><img src="../docs/images/support/wechat-zh.png" alt="WeChat 중국어" width="240"></a></p>
+<p><a href="../docs/i18n/ko/support.md#wechat-zh">WeChat · CNY</a><br><a href="../docs/images/support/wechat-zh.png"><img src="../docs/images/support/wechat-zh.png" alt="WeChat · CNY" width="240"></a></p>
 
 <p><a href="../docs/i18n/ko/support.md#wechat-en">WeChat · HKD</a><br><a href="../docs/images/support/wechat-en.png"><img src="../docs/images/support/wechat-en.png" alt="WeChat · HKD" width="240"></a></p>
 

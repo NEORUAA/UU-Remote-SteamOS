@@ -8,9 +8,9 @@
 
 UU と Ubuntu の更新に合わせて、Plus の対応も続けていきます。応援は新バージョンの検証、開発ツールやトークンの費用を支え、文字入力、コピー＆ペースト、画質をさらに磨く力になります。
 
-| PayPal | Alipay · CNY | AlipayHK · HKD | WeChat · 中国語 QR | WeChat · HKD |
+| PayPal | Alipay · CNY | AlipayHK · HKD | WeChat · CNY | WeChat · HKD |
 | :---: | :---: | :---: | :---: | :---: |
-| <a href="https://paypal.me/mirmirlin"><img src="../../images/support-paypal-en.png" alt="PayPal" width="160"></a> | <a href="../../images/support/alipay-cny.jpg"><img src="../../images/support-alipay-cny-en.png" alt="Alipay · CNY" width="160"></a> | <a href="../../images/support/alipay-hkd.png"><img src="../../images/support-alipay-hkd-en.png" alt="AlipayHK · HKD" width="160"></a> | <a href="../../images/support/wechat-zh.png"><img src="../../images/support-wechat-zh-en.png" alt="WeChat · 中国語 QR" width="160"></a> | <a href="../../images/support/wechat-en.png"><img src="../../images/support-wechat-en-en.png" alt="WeChat · HKD" width="160"></a> |
+| <a href="https://paypal.me/mirmirlin"><img src="../../images/support-paypal-en.png" alt="PayPal" width="160"></a> | <a href="../../images/support/alipay-cny.jpg"><img src="../../images/support-alipay-cny-en.png" alt="Alipay · CNY" width="160"></a> | <a href="../../images/support/alipay-hkd.png"><img src="../../images/support-alipay-hkd-en.png" alt="AlipayHK · HKD" width="160"></a> | <a href="../../images/support/wechat-zh.png"><img src="../../images/support-wechat-zh-en.png" alt="WeChat · CNY" width="160"></a> | <a href="../../images/support/wechat-en.png"><img src="../../images/support-wechat-en-en.png" alt="WeChat · HKD" width="160"></a> |
 
 再現手順のある不具合報告、Linux への移植経験、プルリクエストも歓迎します。次のバージョンを一緒に使いやすくしていきましょう。
 
@@ -44,12 +44,12 @@ UU と Ubuntu の更新に合わせて、Plus の対応も続けていきます�
 
 <a id="wechat-zh"></a>
 
-## WeChat · 中国語 QR
+## WeChat · CNY
 
 <details>
-<summary>Alipay・WeChat の支払いコード · WeChat · 中国語 QR</summary>
+<summary>Alipay・WeChat の支払いコード · WeChat · CNY</summary>
 
-<a href="../../images/support/wechat-zh.png"><img src="../../images/support/wechat-zh.png" alt="WeChat · 中国語 QR" width="300"></a>
+<a href="../../images/support/wechat-zh.png"><img src="../../images/support/wechat-zh.png" alt="WeChat · CNY" width="300"></a>
 
 </details>
 

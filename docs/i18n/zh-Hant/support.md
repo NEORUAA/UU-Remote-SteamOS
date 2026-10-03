@@ -8,9 +8,9 @@
 
 UU 和 Ubuntu 都在更新，Plus 也會繼續跟進。你的支持會用來測試新版本、補齊相容性，分擔開發工具和 Token 的開銷，把中文輸入、剪貼簿和畫質繼續磨好。
 
-| PayPal | 支付寶 · CNY | AlipayHK · HKD | 微信 · 中文碼 | 微信 · HKD |
+| PayPal | 支付寶 · CNY | AlipayHK · HKD | 微信 · CNY | 微信 · HKD |
 | :---: | :---: | :---: | :---: | :---: |
-| <a href="https://paypal.me/mirmirlin"><img src="../../images/support-paypal-zh-Hans.png" alt="PayPal" width="160"></a> | <a href="../../images/support/alipay-cny.jpg"><img src="../../images/support-alipay-cny-zh-Hans.png" alt="支付寶 · CNY" width="160"></a> | <a href="../../images/support/alipay-hkd.png"><img src="../../images/support-alipay-hkd-zh-Hans.png" alt="AlipayHK · HKD" width="160"></a> | <a href="../../images/support/wechat-zh.png"><img src="../../images/support-wechat-zh-zh-Hans.png" alt="微信 · 中文碼" width="160"></a> | <a href="../../images/support/wechat-en.png"><img src="../../images/support-wechat-en-zh-Hans.png" alt="微信 · HKD" width="160"></a> |
+| <a href="https://paypal.me/mirmirlin"><img src="../../images/support-paypal-zh-Hans.png" alt="PayPal" width="160"></a> | <a href="../../images/support/alipay-cny.jpg"><img src="../../images/support-alipay-cny-zh-Hans.png" alt="支付寶 · CNY" width="160"></a> | <a href="../../images/support/alipay-hkd.png"><img src="../../images/support-alipay-hkd-zh-Hans.png" alt="AlipayHK · HKD" width="160"></a> | <a href="../../images/support/wechat-zh.png"><img src="../../images/support-wechat-zh-zh-Hans.png" alt="微信 · CNY" width="160"></a> | <a href="../../images/support/wechat-en.png"><img src="../../images/support-wechat-en-zh-Hans.png" alt="微信 · HKD" width="160"></a> |
 
 有重現步驟、Linux 移植經驗或一份 PR，也歡迎直接帶來。一起把下一版做得更順手。
 
@@ -44,12 +44,12 @@ UU 和 Ubuntu 都在更新，Plus 也會繼續跟進。你的支持會用來測�
 
 <a id="wechat-zh"></a>
 
-## 微信 · 中文碼
+## 微信 · CNY
 
 <details>
-<summary>支付寶與微信收款碼 · 微信 · 中文碼</summary>
+<summary>支付寶與微信收款碼 · 微信 · CNY</summary>
 
-<a href="../../images/support/wechat-zh.png"><img src="../../images/support/wechat-zh.png" alt="微信 · 中文碼" width="300"></a>
+<a href="../../images/support/wechat-zh.png"><img src="../../images/support/wechat-zh.png" alt="微信 · CNY" width="300"></a>
 
 </details>
 

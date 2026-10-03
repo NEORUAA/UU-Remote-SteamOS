@@ -8,9 +8,9 @@
 
 UU và Ubuntu liên tục cập nhật, mình cũng sẽ tiếp tục điều chỉnh Plus cho các phiên bản mới và cải thiện nhập văn bản, sao chép/dán cùng chất lượng hình ảnh. Một ly cà phê giúp chia sẻ chi phí thử phiên bản, công cụ phát triển và token.
 
-| PayPal | Alipay · CNY | AlipayHK · HKD | WeChat · QR tiếng Trung | WeChat · HKD |
+| PayPal | Alipay · CNY | AlipayHK · HKD | WeChat · CNY | WeChat · HKD |
 | :---: | :---: | :---: | :---: | :---: |
-| <a href="https://paypal.me/mirmirlin"><img src="../../images/support-paypal-en.png" alt="PayPal" width="160"></a> | <a href="../../images/support/alipay-cny.jpg"><img src="../../images/support-alipay-cny-en.png" alt="Alipay · CNY" width="160"></a> | <a href="../../images/support/alipay-hkd.png"><img src="../../images/support-alipay-hkd-en.png" alt="AlipayHK · HKD" width="160"></a> | <a href="../../images/support/wechat-zh.png"><img src="../../images/support-wechat-zh-en.png" alt="WeChat · QR tiếng Trung" width="160"></a> | <a href="../../images/support/wechat-en.png"><img src="../../images/support-wechat-en-en.png" alt="WeChat · HKD" width="160"></a> |
+| <a href="https://paypal.me/mirmirlin"><img src="../../images/support-paypal-en.png" alt="PayPal" width="160"></a> | <a href="../../images/support/alipay-cny.jpg"><img src="../../images/support-alipay-cny-en.png" alt="Alipay · CNY" width="160"></a> | <a href="../../images/support/alipay-hkd.png"><img src="../../images/support-alipay-hkd-en.png" alt="AlipayHK · HKD" width="160"></a> | <a href="../../images/support/wechat-zh.png"><img src="../../images/support-wechat-zh-en.png" alt="WeChat · CNY" width="160"></a> | <a href="../../images/support/wechat-en.png"><img src="../../images/support-wechat-en-en.png" alt="WeChat · HKD" width="160"></a> |
 
 Báo lỗi kèm bước tái hiện, kinh nghiệm chuyển sang Linux và pull request đều được chào đón. Cảm ơn bạn đã góp phần làm phiên bản tiếp theo thuận tiện hơn.
 
@@ -44,12 +44,12 @@ Báo lỗi kèm bước tái hiện, kinh nghiệm chuyển sang Linux và pull 
 
 <a id="wechat-zh"></a>
 
-## WeChat · QR tiếng Trung
+## WeChat · CNY
 
 <details>
-<summary>Mã thanh toán Alipay và WeChat · WeChat · QR tiếng Trung</summary>
+<summary>Mã thanh toán Alipay và WeChat · WeChat · CNY</summary>
 
-<a href="../../images/support/wechat-zh.png"><img src="../../images/support/wechat-zh.png" alt="WeChat · QR tiếng Trung" width="300"></a>
+<a href="../../images/support/wechat-zh.png"><img src="../../images/support/wechat-zh.png" alt="WeChat · CNY" width="300"></a>
 
 </details>
 

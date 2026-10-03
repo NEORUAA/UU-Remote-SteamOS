@@ -210,9 +210,9 @@ Ghi phiên bản, thiết lập và các bước tái hiện hành vi.
 
 UU và Ubuntu liên tục cập nhật, mình cũng sẽ tiếp tục điều chỉnh Plus cho các phiên bản mới và cải thiện nhập văn bản, sao chép/dán cùng chất lượng hình ảnh. Một ly cà phê giúp chia sẻ chi phí thử phiên bản, công cụ phát triển và token.
 
-| PayPal | Alipay · CNY | AlipayHK · HKD | WeChat · QR tiếng Trung | WeChat · HKD |
+| PayPal | Alipay · CNY | AlipayHK · HKD | WeChat · CNY | WeChat · HKD |
 | :---: | :---: | :---: | :---: | :---: |
-| <a href="https://paypal.me/mirmirlin"><img src="../docs/images/support-paypal-en.png" alt="PayPal" width="160"></a> | <a href="../docs/images/support/alipay-cny.jpg"><img src="../docs/images/support-alipay-cny-en.png" alt="Alipay · CNY" width="160"></a> | <a href="../docs/images/support/alipay-hkd.png"><img src="../docs/images/support-alipay-hkd-en.png" alt="AlipayHK · HKD" width="160"></a> | <a href="../docs/images/support/wechat-zh.png"><img src="../docs/images/support-wechat-zh-en.png" alt="WeChat · QR tiếng Trung" width="160"></a> | <a href="../docs/images/support/wechat-en.png"><img src="../docs/images/support-wechat-en-en.png" alt="WeChat · HKD" width="160"></a> |
+| <a href="https://paypal.me/mirmirlin"><img src="../docs/images/support-paypal-en.png" alt="PayPal" width="160"></a> | <a href="../docs/images/support/alipay-cny.jpg"><img src="../docs/images/support-alipay-cny-en.png" alt="Alipay · CNY" width="160"></a> | <a href="../docs/images/support/alipay-hkd.png"><img src="../docs/images/support-alipay-hkd-en.png" alt="AlipayHK · HKD" width="160"></a> | <a href="../docs/images/support/wechat-zh.png"><img src="../docs/images/support-wechat-zh-en.png" alt="WeChat · CNY" width="160"></a> | <a href="../docs/images/support/wechat-en.png"><img src="../docs/images/support-wechat-en-en.png" alt="WeChat · HKD" width="160"></a> |
 
 <details>
 <summary>Mã thanh toán Alipay và WeChat</summary>
@@ -221,7 +221,7 @@ UU và Ubuntu liên tục cập nhật, mình cũng sẽ tiếp tục điều ch
 
 <p><a href="../docs/i18n/vi/support.md#alipay-hkd">AlipayHK HKD</a><br><a href="../docs/images/support/alipay-hkd.png"><img src="../docs/images/support/alipay-hkd.png" alt="AlipayHK HKD" width="240"></a></p>
 
-<p><a href="../docs/i18n/vi/support.md#wechat-zh">WeChat tiếng Trung</a><br><a href="../docs/images/support/wechat-zh.png"><img src="../docs/images/support/wechat-zh.png" alt="WeChat tiếng Trung" width="240"></a></p>
+<p><a href="../docs/i18n/vi/support.md#wechat-zh">WeChat · CNY</a><br><a href="../docs/images/support/wechat-zh.png"><img src="../docs/images/support/wechat-zh.png" alt="WeChat · CNY" width="240"></a></p>
 
 <p><a href="../docs/i18n/vi/support.md#wechat-en">WeChat · HKD</a><br><a href="../docs/images/support/wechat-en.png"><img src="../docs/images/support/wechat-en.png" alt="WeChat · HKD" width="240"></a></p>
 

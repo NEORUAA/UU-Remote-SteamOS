@@ -10,9 +10,9 @@
 
 يتغير UU وUbuntu باستمرار، وسأواصل تكييف Plus مع الإصدارات الجديدة وتحسين إدخال النصوص والنسخ واللصق وجودة الصورة. تساعد مساهمتك في تكاليف اختبار الإصدارات وأدوات التطوير والرموز المستخدمة أثناء التطوير.
 
-| PayPal | Alipay · CNY | AlipayHK · HKD | WeChat · رمز صيني | WeChat · HKD |
+| PayPal | Alipay · CNY | AlipayHK · HKD | WeChat · CNY | WeChat · HKD |
 | :---: | :---: | :---: | :---: | :---: |
-| <a href="https://paypal.me/mirmirlin"><img src="../../images/support-paypal-en.png" alt="PayPal" width="160"></a> | <a href="../../images/support/alipay-cny.jpg"><img src="../../images/support-alipay-cny-en.png" alt="Alipay · CNY" width="160"></a> | <a href="../../images/support/alipay-hkd.png"><img src="../../images/support-alipay-hkd-en.png" alt="AlipayHK · HKD" width="160"></a> | <a href="../../images/support/wechat-zh.png"><img src="../../images/support-wechat-zh-en.png" alt="WeChat · رمز صيني" width="160"></a> | <a href="../../images/support/wechat-en.png"><img src="../../images/support-wechat-en-en.png" alt="WeChat · HKD" width="160"></a> |
+| <a href="https://paypal.me/mirmirlin"><img src="../../images/support-paypal-en.png" alt="PayPal" width="160"></a> | <a href="../../images/support/alipay-cny.jpg"><img src="../../images/support-alipay-cny-en.png" alt="Alipay · CNY" width="160"></a> | <a href="../../images/support/alipay-hkd.png"><img src="../../images/support-alipay-hkd-en.png" alt="AlipayHK · HKD" width="160"></a> | <a href="../../images/support/wechat-zh.png"><img src="../../images/support-wechat-zh-en.png" alt="WeChat · CNY" width="160"></a> | <a href="../../images/support/wechat-en.png"><img src="../../images/support-wechat-en-en.png" alt="WeChat · HKD" width="160"></a> |
 
 نرحب أيضًا بخطوات واضحة لإعادة إنتاج الأخطاء، وخبرات نقل المشروع إلى Linux، وطلبات الدمج. شكرًا لمساعدتك في تحسين الإصدار القادم.
 
@@ -46,12 +46,12 @@
 
 <a id="wechat-zh"></a>
 
-## WeChat · رمز صيني
+## WeChat · CNY
 
 <details>
-<summary>رموز الدفع عبر Alipay وWeChat · WeChat · رمز صيني</summary>
+<summary>رموز الدفع عبر Alipay وWeChat · WeChat · CNY</summary>
 
-<a href="../../images/support/wechat-zh.png"><img src="../../images/support/wechat-zh.png" alt="WeChat · رمز صيني" width="300"></a>
+<a href="../../images/support/wechat-zh.png"><img src="../../images/support/wechat-zh.png" alt="WeChat · CNY" width="300"></a>
 
 </details>
 

@@ -8,9 +8,9 @@
 
 UU y Ubuntu siguen cambiando. Seguiré adaptando Plus a las nuevas versiones y afinando la entrada de texto, copiar y pegar y la calidad de imagen. Un café ayuda a cubrir las pruebas de versiones, las herramientas de desarrollo y los tokens.
 
-| PayPal | Alipay · CNY | AlipayHK · HKD | WeChat · QR chino | WeChat · HKD |
+| PayPal | Alipay · CNY | AlipayHK · HKD | WeChat · CNY | WeChat · HKD |
 | :---: | :---: | :---: | :---: | :---: |
-| <a href="https://paypal.me/mirmirlin"><img src="../../images/support-paypal-en.png" alt="PayPal" width="160"></a> | <a href="../../images/support/alipay-cny.jpg"><img src="../../images/support-alipay-cny-en.png" alt="Alipay · CNY" width="160"></a> | <a href="../../images/support/alipay-hkd.png"><img src="../../images/support-alipay-hkd-en.png" alt="AlipayHK · HKD" width="160"></a> | <a href="../../images/support/wechat-zh.png"><img src="../../images/support-wechat-zh-en.png" alt="WeChat · QR chino" width="160"></a> | <a href="../../images/support/wechat-en.png"><img src="../../images/support-wechat-en-en.png" alt="WeChat · HKD" width="160"></a> |
+| <a href="https://paypal.me/mirmirlin"><img src="../../images/support-paypal-en.png" alt="PayPal" width="160"></a> | <a href="../../images/support/alipay-cny.jpg"><img src="../../images/support-alipay-cny-en.png" alt="Alipay · CNY" width="160"></a> | <a href="../../images/support/alipay-hkd.png"><img src="../../images/support-alipay-hkd-en.png" alt="AlipayHK · HKD" width="160"></a> | <a href="../../images/support/wechat-zh.png"><img src="../../images/support-wechat-zh-en.png" alt="WeChat · CNY" width="160"></a> | <a href="../../images/support/wechat-en.png"><img src="../../images/support-wechat-en-en.png" alt="WeChat · HKD" width="160"></a> |
 
 También son bienvenidos los errores con pasos para reproducirlos, las notas de adaptación a Linux y los pull requests. Gracias por ayudar a dar forma a la próxima versión.
 
@@ -44,12 +44,12 @@ También son bienvenidos los errores con pasos para reproducirlos, las notas de 
 
 <a id="wechat-zh"></a>
 
-## WeChat · QR chino
+## WeChat · CNY
 
 <details>
-<summary>Códigos de pago de Alipay y WeChat · WeChat · QR chino</summary>
+<summary>Códigos de pago de Alipay y WeChat · WeChat · CNY</summary>
 
-<a href="../../images/support/wechat-zh.png"><img src="../../images/support/wechat-zh.png" alt="WeChat · QR chino" width="300"></a>
+<a href="../../images/support/wechat-zh.png"><img src="../../images/support/wechat-zh.png" alt="WeChat · CNY" width="300"></a>
 
 </details>
 

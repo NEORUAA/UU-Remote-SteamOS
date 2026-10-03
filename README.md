@@ -219,9 +219,9 @@ Describe the version, selected settings and reproducible behavior.
 
 UU and Ubuntu keep changing. I’ll keep working to make Plus fit new releases and make text input, copy and paste, and picture quality feel right. A coffee helps cover version testing, development tools and tokens.
 
-| PayPal | Alipay · CNY | AlipayHK · HKD | WeChat · Chinese QR | WeChat · HKD |
+| PayPal | Alipay · CNY | AlipayHK · HKD | WeChat · CNY | WeChat · HKD |
 | :---: | :---: | :---: | :---: | :---: |
-| <a href="https://paypal.me/mirmirlin"><img src="docs/images/support-paypal-en.png" alt="PayPal" width="160"></a> | <a href="docs/images/support/alipay-cny.jpg"><img src="docs/images/support-alipay-cny-en.png" alt="Alipay · CNY" width="160"></a> | <a href="docs/images/support/alipay-hkd.png"><img src="docs/images/support-alipay-hkd-en.png" alt="AlipayHK · HKD" width="160"></a> | <a href="docs/images/support/wechat-zh.png"><img src="docs/images/support-wechat-zh-en.png" alt="WeChat · Chinese QR" width="160"></a> | <a href="docs/images/support/wechat-en.png"><img src="docs/images/support-wechat-en-en.png" alt="WeChat · HKD" width="160"></a> |
+| <a href="https://paypal.me/mirmirlin"><img src="docs/images/support-paypal-en.png" alt="PayPal" width="160"></a> | <a href="docs/images/support/alipay-cny.jpg"><img src="docs/images/support-alipay-cny-en.png" alt="Alipay · CNY" width="160"></a> | <a href="docs/images/support/alipay-hkd.png"><img src="docs/images/support-alipay-hkd-en.png" alt="AlipayHK · HKD" width="160"></a> | <a href="docs/images/support/wechat-zh.png"><img src="docs/images/support-wechat-zh-en.png" alt="WeChat · CNY" width="160"></a> | <a href="docs/images/support/wechat-en.png"><img src="docs/images/support-wechat-en-en.png" alt="WeChat · HKD" width="160"></a> |
 
 <details>
 <summary>Alipay and WeChat payment codes</summary>
@@ -230,7 +230,7 @@ UU and Ubuntu keep changing. I’ll keep working to make Plus fit new releases a
 
 <p><a href="docs/support.md#alipay-hkd">AlipayHK HKD</a><br><a href="docs/images/support/alipay-hkd.png"><img src="docs/images/support/alipay-hkd.png" alt="AlipayHK HKD" width="240"></a></p>
 
-<p><a href="docs/support.md#wechat-zh">WeChat Chinese</a><br><a href="docs/images/support/wechat-zh.png"><img src="docs/images/support/wechat-zh.png" alt="WeChat Chinese" width="240"></a></p>
+<p><a href="docs/support.md#wechat-zh">WeChat · CNY</a><br><a href="docs/images/support/wechat-zh.png"><img src="docs/images/support/wechat-zh.png" alt="WeChat · CNY" width="240"></a></p>
 
 <p><a href="docs/support.md#wechat-en">WeChat · HKD</a><br><a href="docs/images/support/wechat-en.png"><img src="docs/images/support/wechat-en.png" alt="WeChat · HKD" width="240"></a></p>
 

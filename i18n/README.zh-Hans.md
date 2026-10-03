@@ -209,9 +209,9 @@ uu-remote stop
 
 UU 和 Ubuntu 都在更新，Plus 也会接着跟进。你的支持会用来测试新版本、补齐兼容性，分担开发工具和 Token 的开销，把中文输入、剪贴板和画质继续磨好。
 
-| PayPal | 支付宝 · CNY | AlipayHK · HKD | 微信 · 中文码 | 微信 · HKD |
+| PayPal | 支付宝 · CNY | AlipayHK · HKD | 微信 · CNY | 微信 · HKD |
 | :---: | :---: | :---: | :---: | :---: |
-| <a href="https://paypal.me/mirmirlin"><img src="../docs/images/support-paypal-zh-Hans.png" alt="PayPal" width="160"></a> | <a href="../docs/images/support/alipay-cny.jpg"><img src="../docs/images/support-alipay-cny-zh-Hans.png" alt="支付宝 · CNY" width="160"></a> | <a href="../docs/images/support/alipay-hkd.png"><img src="../docs/images/support-alipay-hkd-zh-Hans.png" alt="AlipayHK · HKD" width="160"></a> | <a href="../docs/images/support/wechat-zh.png"><img src="../docs/images/support-wechat-zh-zh-Hans.png" alt="微信 · 中文码" width="160"></a> | <a href="../docs/images/support/wechat-en.png"><img src="../docs/images/support-wechat-en-zh-Hans.png" alt="微信 · HKD" width="160"></a> |
+| <a href="https://paypal.me/mirmirlin"><img src="../docs/images/support-paypal-zh-Hans.png" alt="PayPal" width="160"></a> | <a href="../docs/images/support/alipay-cny.jpg"><img src="../docs/images/support-alipay-cny-zh-Hans.png" alt="支付宝 · CNY" width="160"></a> | <a href="../docs/images/support/alipay-hkd.png"><img src="../docs/images/support-alipay-hkd-zh-Hans.png" alt="AlipayHK · HKD" width="160"></a> | <a href="../docs/images/support/wechat-zh.png"><img src="../docs/images/support-wechat-zh-zh-Hans.png" alt="微信 · CNY" width="160"></a> | <a href="../docs/images/support/wechat-en.png"><img src="../docs/images/support-wechat-en-zh-Hans.png" alt="微信 · HKD" width="160"></a> |
 
 <details>
 <summary>支付宝与微信收款码</summary>
@@ -220,7 +220,7 @@ UU 和 Ubuntu 都在更新，Plus 也会接着跟进。你的支持会用来测�
 
 <p><a href="../docs/i18n/zh-Hans/support.md#alipay-hkd">AlipayHK HKD</a><br><a href="../docs/images/support/alipay-hkd.png"><img src="../docs/images/support/alipay-hkd.png" alt="AlipayHK HKD" width="240"></a></p>
 
-<p><a href="../docs/i18n/zh-Hans/support.md#wechat-zh">微信中文版</a><br><a href="../docs/images/support/wechat-zh.png"><img src="../docs/images/support/wechat-zh.png" alt="微信中文版" width="240"></a></p>
+<p><a href="../docs/i18n/zh-Hans/support.md#wechat-zh">微信 · CNY</a><br><a href="../docs/images/support/wechat-zh.png"><img src="../docs/images/support/wechat-zh.png" alt="微信 · CNY" width="240"></a></p>
 
 <p><a href="../docs/i18n/zh-Hans/support.md#wechat-en">微信 · HKD</a><br><a href="../docs/images/support/wechat-en.png"><img src="../docs/images/support/wechat-en.png" alt="微信 · HKD" width="240"></a></p>
 
