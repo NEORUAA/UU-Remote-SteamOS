@@ -59,5 +59,22 @@ saved settings and an exact rollback command. FreeRDP's thirteen PE products
 are reused only after checking their fixed hashes and build recipe through the
 normal source-build reuse path; this is not a new cold build.
 
+On the current host, terminal reattachment and an incoming single file passed
+their acceptance checks. A distinct 43×29 Ubuntu image also reached the Mac
+with identical RGB pixels. **Mac-to-Ubuntu bitmap acceptance is still failing.**
+An earlier 35×21 Mac image was recovered from the Windows owner's original
+DIB, while Wine's synthesized DIBV5 and bitmap still held the previous image.
+The companion now reads the original DIB first. In the subsequent live session,
+however, a new 37×23 Mac source never appeared in the Windows clipboard, even
+after reconnection and paste. Enabling only Wine-to-GNOME RDP clipboard traffic
+did not produce a new image offer, so that experiment was rolled back.
+
+The remaining boundary is the controller-to-UU/Wine image offer and its delayed
+data request. It requires a fresh GameViewer-owned format and source pixels
+before the native reader can import them. This observation does not establish
+an official UU platform limitation. Do not force rendering against an Explorer
+or SDL clipboard owner, replay the old image as a successful incoming copy, or
+claim the CPU/GPU prototypes complete while this baseline remains unaccepted.
+
 The upstream `docs/releases/v0.2.0.md` and published `v0.1.0` tag remain historical
 records. `0.2.0-work` is a local working version pending controller acceptance.
