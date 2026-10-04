@@ -23,6 +23,9 @@
 #define UURB_CLIPBOARD_FILE_CHUNK 7U
 #define UURB_CLIPBOARD_FILE_END 8U
 #define UURB_CLIPBOARD_FILE_ABORT 9U
+/* GET_HOST_IMAGE response: uint32 kind=10, uint32 DIBV5 bytes, DIBV5,
+ * then the source PNG. Both representations belong to the same copy. */
+#define UURB_CLIPBOARD_GET_HOST_IMAGE 10U
 #define UURB_CLIPBOARD_MAX_FILES 64U
 #define UURB_CLIPBOARD_MAX_BATCH UINT32_C(268435456)
 #define UURB_CLIPBOARD_FILE_BLOCK 65536U

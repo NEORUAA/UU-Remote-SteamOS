@@ -678,9 +678,9 @@ static BOOL forward_current_clipboard(DWORD sequence)
 static BOOL receive_host_clipboard(void)
 {
     uurb_x11_clipboard_request request = {
-        UURB_X11_CLIPBOARD_MAGIC, 0, 0, UURB_CLIPBOARD_GET_HOST};
+        UURB_X11_CLIPBOARD_MAGIC, 0, 0, UURB_CLIPBOARD_GET_HOST_IMAGE};
     uurb_x11_clipboard_response response;
-    HGLOBAL v5 = NULL, dib = NULL;
+    HGLOBAL v5 = NULL, dib = NULL, png = NULL;
     char *packet = NULL, *data;
     DWORD kind, size;
     UINT format;
@@ -707,6 +707,23 @@ static BOOL receive_host_clipboard(void)
     memcpy(&kind, packet, sizeof(kind));
     size = response.result - sizeof(kind);
     data = packet + sizeof(kind);
+    if (kind == UURB_CLIPBOARD_GET_HOST_IMAGE) {
+        DWORD dib_bytes;
+        if (size < sizeof(dib_bytes) + 124 + 8) goto done;
+        memcpy(&dib_bytes, data, sizeof(dib_bytes));
+        if (dib_bytes < 124 || dib_bytes > size - sizeof(dib_bytes) - 8) goto done;
+        const char *encoded = data + sizeof(dib_bytes) + dib_bytes;
+        DWORD png_bytes = size - sizeof(dib_bytes) - dib_bytes;
+        if (memcmp(encoded, "\x89PNG\r\n\x1a\n", 8)) goto done;
+        png = GlobalAlloc(GMEM_MOVEABLE, png_bytes);
+        void *png_data = png ? GlobalLock(png) : NULL;
+        if (!png_data) goto done;
+        memcpy(png_data, encoded, png_bytes);
+        GlobalUnlock(png);
+        data += sizeof(dib_bytes);
+        size = dib_bytes;
+        kind = UURB_CLIPBOARD_DIB;
+    }
     if (kind == 0) {
         int units;
         wchar_t *text;
@@ -745,12 +762,12 @@ static BOOL receive_host_clipboard(void)
         goto done;
     }
     if (format == CF_DIBV5) {
-        IDataObject *image = set_ole_clipboard ? uurb_image_object_new(v5, dib) : NULL;
+        IDataObject *image = set_ole_clipboard ? uurb_image_object_new(v5, dib, png) : NULL;
         if (!image) {
             report_clipboard_failure("native-image-object");
             goto done;
         }
-        v5 = dib = NULL;
+        v5 = dib = png = NULL;
         result = SUCCEEDED(set_ole_clipboard(image));
         IDataObject_Release(image);
         if (!result)
@@ -775,6 +792,8 @@ done:
         GlobalFree(v5);
     if (dib)
         GlobalFree(dib);
+    if (png)
+        GlobalFree(png);
     return result;
 }
 

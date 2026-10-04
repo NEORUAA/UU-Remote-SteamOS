@@ -88,6 +88,32 @@ int wmain(int argc, wchar_t **argv)
     ULONGLONG deadline;
     if (argc < 2 || !window) return 2;
     OleInitialize(NULL);
+    if (wcscmp(argv[1], L"read-png") == 0 || wcscmp(argv[1], L"read-dib-ole") == 0) {
+        IDataObject *image = NULL;
+        STGMEDIUM medium = {0};
+        UINT png = RegisterClipboardFormatW(L"PNG");
+        FORMATETC format = {wcscmp(argv[1], L"read-png") == 0 ? (CLIPFORMAT)png : CF_DIB,
+            NULL, DVASPECT_CONTENT, -1, TYMED_HGLOBAL};
+        if (argc != 3 || FAILED(OleGetClipboard(&image))) return 3;
+        IEnumFORMATETC *enumerator = NULL;
+        FORMATETC first = {0};
+        BOOL png_first = SUCCEEDED(IDataObject_EnumFormatEtc(image, DATADIR_GET, &enumerator)) &&
+            IEnumFORMATETC_Next(enumerator, 1, &first, NULL) == S_OK && first.cfFormat == png;
+        if (enumerator) IEnumFORMATETC_Release(enumerator);
+        if (!png_first || FAILED(IDataObject_GetData(image, &format, &medium))) {
+            IDataObject_Release(image); return 4;
+        }
+        void *bytes = GlobalLock(medium.hGlobal);
+        HANDLE file = bytes ? CreateFileW(argv[2], GENERIC_WRITE, 0, NULL, CREATE_NEW,
+            FILE_ATTRIBUTE_NORMAL, NULL) : INVALID_HANDLE_VALUE;
+        DWORD written = 0;
+        BOOL saved = file != INVALID_HANDLE_VALUE && WriteFile(file, bytes,
+            (DWORD)GlobalSize(medium.hGlobal), &written, NULL);
+        if (file != INVALID_HANDLE_VALUE) CloseHandle(file);
+        if (bytes) GlobalUnlock(medium.hGlobal);
+        ReleaseStgMedium(&medium); IDataObject_Release(image); OleUninitialize();
+        return saved ? 0 : 5;
+    }
     if (wcscmp(argv[1], L"read-image") == 0 || wcscmp(argv[1], L"read-text") == 0) {
         HANDLE data, file;
         void *bytes;

@@ -26,6 +26,7 @@ MAGIC = 0x43425555
 MAX_BYTES = 64 * 1024 * 1024
 MAX_PIXELS = 16 * 1024 * 1024
 TEXT, PNG, DIB, GET_IMAGE, FILE, GET_HOST = range(6)
+GET_HOST_IMAGE = 10
 FILE_BEGIN, FILE_CHUNK, FILE_END, FILE_ABORT = range(6, 10)
 MAX_FILES, MAX_BATCH = 64, 256 * 1024 * 1024
 Image.MAX_IMAGE_PIXELS = MAX_PIXELS
@@ -422,7 +423,7 @@ class Clipboard:
                 self.file_update(force=True)
         elif kind == FILE_ABORT:
             self.file_abort(data.decode("utf-8")[:300])
-        elif kind in (GET_IMAGE, GET_HOST):
+        elif kind in (GET_IMAGE, GET_HOST, GET_HOST_IMAGE):
             if not self.image_dirty:
                 return b""
             self.image_dirty = False
@@ -435,7 +436,7 @@ class Clipboard:
                 offered = targets.stdout.decode(errors="replace").splitlines()
                 target = next((name for name in ("image/png", "image/bmp")
                                if name in offered), None)
-                if target is None and kind == GET_HOST:
+                if target is None and kind in (GET_HOST, GET_HOST_IMAGE):
                     target = next((name for name in ("UTF8_STRING", "text/plain;charset=utf-8")
                                    if name in offered), None)
                 if target is None:
@@ -477,6 +478,16 @@ class Clipboard:
                          "width": image.width, "height": image.height,
                          "pixel_rgb_sha256": hashlib.sha256(image.convert("RGB").tobytes()).hexdigest()})
             payload = image_dib(image)
+            if kind == GET_HOST_IMAGE:
+                if target == "image/png":
+                    png = result.stdout
+                else:
+                    encoded = io.BytesIO()
+                    image.save(encoded, format="PNG")
+                    png = encoded.getvalue()
+                bundled = struct.pack("<II", GET_HOST_IMAGE, len(payload)) + payload + png
+                # Retain the existing large-image DIB path at the transport limit.
+                return bundled if len(bundled) <= MAX_BYTES else struct.pack("<I", DIB) + payload
             return struct.pack("<I", DIB) + payload if kind == GET_HOST else payload
         else:
             raise ValueError("unknown clipboard operation")
@@ -548,7 +559,7 @@ def serve(listener, token, work):
                 client.sendall(struct.pack("<IIII", MAGIC, 0, 1, 0))
                 while True:
                     magic, sequence, length, kind = struct.unpack("<IIII", exact(client, 16))
-                    if magic != MAGIC or length > MAX_BYTES or kind > FILE_ABORT:
+                    if magic != MAGIC or length > MAX_BYTES or kind > GET_HOST_IMAGE:
                         raise ValueError("invalid request")
                     data = exact(client, length)
                     answer = queue.Queue(1)
@@ -562,9 +573,9 @@ def serve(listener, token, work):
                         file_active = False
                     # UU may need to fetch a delayed OLE stream before our next chunk.
                     client.settimeout(30 if file_active else 2)
-                    size = len(output) if kind in (GET_IMAGE, GET_HOST) else (length if not error else 0)
+                    size = len(output) if kind in (GET_IMAGE, GET_HOST, GET_HOST_IMAGE) else (length if not error else 0)
                     client.sendall(struct.pack("<IIII", MAGIC, sequence, size, error))
-                    if kind in (GET_IMAGE, GET_HOST) and output:
+                    if kind in (GET_IMAGE, GET_HOST, GET_HOST_IMAGE) and output:
                         client.sendall(output)
             except (EOFError, OSError, ValueError, queue.Empty):
                 pass
@@ -610,7 +621,7 @@ def main():
                 if answer is not None:
                     answer.put((output or b"", 0))
             except (ValueError, OSError, RuntimeError, struct.error) as error:
-                if kind >= FILE_BEGIN:
+                if FILE_BEGIN <= kind <= FILE_ABORT:
                     clipboard.file_abort(str(error))
                 if answer is not None:
                     answer.put((b"", 0x3001))

@@ -125,6 +125,19 @@ def main():
             raw = dump.read_bytes()
             assert struct.unpack_from("<ii", raw, 4) == (2, -1)
             assert raw[124:132] == bytes([9,8,7,255,60,50,40,100])
+            png_dump = lab / "reverse.png"
+            wait_for(lambda: subprocess.run([WINE, str(fixture), "read-png",
+                        "Z:" + str(png_dump)], env=windows, stdout=subprocess.DEVNULL,
+                        stderr=subprocess.DEVNULL, timeout=5).returncode == 0)
+            assert png_dump.read_bytes() == encoded.getvalue(), "PNG source bytes changed"
+            assert Image.open(png_dump).convert("RGBA").tobytes() == outgoing.tobytes()
+            dib_dump = lab / "reverse-ole.dib"
+            wait_for(lambda: subprocess.run([WINE, str(fixture), "read-dib-ole",
+                        "Z:" + str(dib_dump)], env=windows, stdout=subprocess.DEVNULL,
+                        stderr=subprocess.DEVNULL, timeout=5).returncode == 0)
+            raw = dib_dump.read_bytes()
+            assert struct.unpack_from("<ii", raw, 4) == (2, -1)
+            assert raw[40:48] == bytes([9,8,7,255,60,50,40,100])
             native_text = "Ubuntu 中文\nsecond line"
             seed(native_text.encode(), "UTF8_STRING")
             wait_for(lambda: state().get("kind") == "text" and
@@ -257,6 +270,8 @@ def main():
                               "same_pixels_PNG_BMP_echo_suppressed": "PASS",
                               "native_text_not_replayed": "PASS",
                               "primary_DIB_over_stale_synthesized_V5": "PASS",
+                              "original_PNG_OLE_HGLOBAL_bytes_and_RGBA": "PASS",
+                              "PNG_first_enumeration_and_DIB_OLE_preserved": "PASS",
                               "single_file_HDROP": "PASS", "virtual_OLE_IStream": "PASS",
                               "URI_list_published": "PASS", "same_image_after_external_text": "PASS",
                               "path_traversal_rejected": "PASS", "duplicate_name_no_overwrite": "PASS",
