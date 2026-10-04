@@ -24,7 +24,7 @@ from Xlib.ext import xfixes
 MAGIC = 0x43425555
 MAX_BYTES = 64 * 1024 * 1024
 MAX_PIXELS = 16 * 1024 * 1024
-TEXT, PNG, DIB, GET_IMAGE, FILE = range(5)
+TEXT, PNG, DIB, GET_IMAGE, FILE, GET_HOST = range(6)
 Image.MAX_IMAGE_PIXELS = MAX_PIXELS
 
 
@@ -119,6 +119,7 @@ class Clipboard:
         self.staging = staging
         self.status_file = status_file
         self.image_digest = None
+        self.text_digest = None
         self.image_dirty = False
         self.d.xfixes_query_version()
         self.d.xfixes_select_selection_input(self.window, self.clip, 7)
@@ -148,12 +149,14 @@ class Clipboard:
                 raise ValueError("invalid text")
             self.publish({"UTF8_STRING": data, "text/plain;charset=utf-8": data}, True)
             self.image_digest = None
+            self.text_digest = hashlib.sha256(data).digest()
             self.record({"kind": "text", "direction": "controller-to-native"})
         elif kind in (PNG, DIB):
             image = png_image(data) if kind == PNG else dib_image(data)
             output = io.BytesIO()
             image.save(output, format="PNG")
             self.image_digest = hashlib.sha256(image.tobytes()).digest()
+            self.text_digest = None
             self.publish({"image/png": output.getvalue()})
             self.record({"kind": "image", "direction": "controller-to-native",
                          "width": image.width, "height": image.height,
@@ -164,34 +167,66 @@ class Clipboard:
             self.publish({"text/uri-list": uri + b"\r\n",
                           "x-special/gnome-copied-files": b"copy\n" + uri + b"\n"})
             self.image_digest = None
+            self.text_digest = None
             self.record({"kind": "file", "direction": "controller-to-native",
                          "staged_path": str(path), "size": path.stat().st_size,
                          "sha256": hashlib.sha256(path.read_bytes()).hexdigest()})
-        elif kind == GET_IMAGE:
+        elif kind in (GET_IMAGE, GET_HOST):
             if not self.image_dirty:
                 return b""
             self.image_dirty = False
             if self.d.get_selection_owner(self.clip) == self.window:
                 return b""
             try:
+                targets = subprocess.run(["/usr/bin/xclip", "-selection", "clipboard",
+                                          "-out", "-target", "TARGETS"],
+                                         capture_output=True, timeout=1)
+                offered = targets.stdout.decode(errors="replace").splitlines()
+                target = next((name for name in ("image/png", "image/bmp")
+                               if name in offered), None)
+                if target is None and kind == GET_HOST:
+                    target = next((name for name in ("UTF8_STRING", "text/plain;charset=utf-8")
+                                   if name in offered), None)
+                if target is None:
+                    self.image_digest = self.text_digest = None
+                    return b""
                 result = subprocess.run(["/usr/bin/xclip", "-selection", "clipboard",
-                                         "-out", "-target", "image/png"],
+                                         "-out", "-target", target],
                                         capture_output=True, timeout=1)
                 if result.returncode or len(result.stdout) > MAX_BYTES:
-                    self.image_digest = None
                     return b""
-                image = png_image(result.stdout)
-            except (ValueError, OSError, subprocess.TimeoutExpired):
+                if not target.startswith("image/"):
+                    data = result.stdout
+                    data.decode("utf-8")
+                    if not data or b"\0" in data or len(data) > 4194304:
+                        return b""
+                    digest = hashlib.sha256(data).digest()
+                    self.image_digest = None
+                    if digest == self.text_digest:
+                        return b""
+                    self.text_digest = digest
+                    self.record({"kind": "text", "direction": "native-to-wine-prepared"})
+                    return struct.pack("<I", TEXT) + data
+                if target == "image/png":
+                    image = png_image(result.stdout)
+                else:
+                    image = Image.open(io.BytesIO(result.stdout))
+                    if image.format != "BMP" or image.width * image.height > MAX_PIXELS:
+                        raise ValueError("unsupported BMP")
+                    image = image.convert("RGBA")
+            except (ValueError, OSError, subprocess.TimeoutExpired, Image.DecompressionBombError):
                 self.image_digest = None
                 return b""
             digest = hashlib.sha256(image.tobytes()).digest()
+            self.text_digest = None
             if digest == self.image_digest:
                 return b""
             self.image_digest = digest
             self.record({"kind": "image", "direction": "native-to-wine-prepared",
                          "width": image.width, "height": image.height,
                          "pixel_rgb_sha256": hashlib.sha256(image.convert("RGB").tobytes()).hexdigest()})
-            return image_dib(image)
+            payload = image_dib(image)
+            return struct.pack("<I", DIB) + payload if kind == GET_HOST else payload
         else:
             raise ValueError("unknown clipboard operation")
         return None
@@ -259,15 +294,15 @@ def serve(listener, token, work):
                 client.sendall(struct.pack("<IIII", MAGIC, 0, 1, 0))
                 while True:
                     magic, sequence, length, kind = struct.unpack("<IIII", exact(client, 16))
-                    if magic != MAGIC or length > MAX_BYTES or kind > FILE:
+                    if magic != MAGIC or length > MAX_BYTES or kind > GET_HOST:
                         raise ValueError("invalid request")
                     data = exact(client, length)
                     answer = queue.Queue(1)
                     work.put((kind, data, answer))
                     output, error = answer.get(timeout=3)
-                    size = len(output) if kind == GET_IMAGE else (length if not error else 0)
+                    size = len(output) if kind in (GET_IMAGE, GET_HOST) else (length if not error else 0)
                     client.sendall(struct.pack("<IIII", MAGIC, sequence, size, error))
-                    if kind == GET_IMAGE and output:
+                    if kind in (GET_IMAGE, GET_HOST) and output:
                         client.sendall(output)
             except (EOFError, OSError, ValueError, queue.Empty):
                 pass

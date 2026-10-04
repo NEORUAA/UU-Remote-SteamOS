@@ -117,6 +117,21 @@ def main():
             raw = dump.read_bytes()
             assert struct.unpack_from("<ii", raw, 4) == (2, -1)
             assert raw[124:132] == bytes([9,8,7,255,60,50,40,100])
+            native_text = "Ubuntu 中文\nsecond line"
+            seed(native_text.encode(), "UTF8_STRING")
+            wait_for(lambda: state().get("kind") == "text" and
+                     state().get("direction") == "native-to-wine-prepared")
+            text_dump = lab / "reverse-text.bin"
+            wait_for(lambda: subprocess.run([WINE, str(fixture), "read-text",
+                        "Z:" + str(text_dump)], env=windows, stdout=subprocess.DEVNULL,
+                        stderr=subprocess.DEVNULL, timeout=5).returncode == 0)
+            assert text_dump.read_bytes().decode("utf-16-le").rstrip("\0") == native_text
+            launch([WINE, str(fixture), "text"], windows)
+            wait_for(lambda: state().get("direction") == "controller-to-native" and
+                     state().get("kind") == "text")
+            text = subprocess.check_output(["xclip", "-selection", "clipboard", "-out",
+                                           "-target", "UTF8_STRING"], env=host, timeout=5)
+            assert text.decode() == "Windows 中文\nsecond line"
             source = lab / "中文 file.bin"
             content = b"single-file\0\xff\n"
             source.write_bytes(content)
@@ -139,13 +154,26 @@ def main():
             def request(kind, payload=b""):
                 client.sendall(struct.pack("<IIII", MAGIC, 99, len(payload), kind) + payload)
                 _, _, length, error = struct.unpack("<IIII", exact(client, 16))
-                return exact(client, length) if kind == 3 and length else (length, error)
+                return exact(client, length) if kind in (3, 5) and length else (length, error)
             seed(encoded.getvalue(), "image/png")
             assert isinstance(request(3), bytes)
             seed(b"foreign text", "UTF8_STRING")
             assert request(3) == (0, 0)
             seed(encoded.getvalue(), "image/png")
             assert isinstance(request(3), bytes), "same-image-after-text was suppressed"
+            opaque = outgoing.convert("RGB")
+            for format_name, target in (("PNG", "image/png"), ("BMP", "image/bmp")):
+                encoded_opaque = io.BytesIO()
+                opaque.save(encoded_opaque, format=format_name)
+                seed(encoded_opaque.getvalue(), target)
+                response = request(5)
+                if format_name == "PNG":
+                    assert isinstance(response, bytes) and response[:4] == struct.pack("<I", 2)
+                else:
+                    assert response == (0, 0), "same pixels returned in another format were echoed"
+            seed(b"new native text", "UTF8_STRING")
+            assert request(5) == struct.pack("<I", 0) + b"new native text"
+            assert request(5) == (0, 0), "unchanged clipboard was replayed"
             invalid = struct.pack("<I", 4) + b"../x" + b"data"
             assert request(4, invalid)[1] != 0
             packet = struct.pack("<I", 8) + b"same.bin" + b"first"
@@ -161,6 +189,9 @@ def main():
             assert len(list((lab / "staging").glob("*"))) == count
             print(json.dumps({"bitmap_wine_to_native_pixels": "PASS",
                               "bitmap_native_to_wine_different_pixels": "PASS",
+                              "text_unicode_multiline_each_direction": "PASS",
+                              "same_pixels_PNG_BMP_echo_suppressed": "PASS",
+                              "native_text_not_replayed": "PASS",
                               "single_file_HDROP": "PASS", "virtual_OLE_IStream": "PASS",
                               "URI_list_published": "PASS", "same_image_after_external_text": "PASS",
                               "path_traversal_rejected": "PASS", "duplicate_name_no_overwrite": "PASS",

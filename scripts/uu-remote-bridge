@@ -1764,6 +1764,11 @@ relay_ready=false
 if [[ "$desktop_relay" == rdp ]]; then
     freerdp_mouse_options=()
     freerdp_full_options=()
+    freerdp_clipboard_option=+clipboard
+    if [[ -n "$wine_clipboard_bridge_pid" ]]; then
+        freerdp_clipboard_option=-clipboard
+        log 'Native text/image clipboard owns synchronization; RDP CLIPRDR is disabled to avoid clipboard echo.'
+    fi
     [[ "$input_route" != rdp-public ]] || freerdp_full_options+=(/dvc:uurb-full-input)
     if [[ "$cursor_guard_setting" == on ]]; then
         freerdp_mouse_options+=(/mouse:relative:off,grab:off)
@@ -1789,7 +1794,7 @@ if [[ "$desktop_relay" == rdp ]]; then
         -toggle-fullscreen \
         -decorations \
         -suppress-output \
-        +clipboard \
+        "$freerdp_clipboard_option" \
         +auto-reconnect \
         /auto-reconnect-max-retries:0 \
         /log-level:WARN \
@@ -2207,7 +2212,7 @@ supervise_server() {
 supervise_server "$server_pid" &
 server_supervisor_pid=$!
 
-log "UU Remote and the $desktop_relay desktop relay share DISPLAY=$DISPLAY; physical keyboard route=$active_keyboard_route; semantic phone text helper=$([[ -n "$x11_input_port" ]] && printf active || printf unavailable); one-way Mac clipboard=$([[ -n "$wine_clipboard_bridge_pid" ]] && printf active || printf unavailable)."
+log "UU Remote and the $desktop_relay desktop relay share DISPLAY=$DISPLAY; physical keyboard route=$active_keyboard_route; semantic phone text helper=$([[ -n "$x11_input_port" ]] && printf active || printf unavailable); native clipboard=$([[ -n "$wine_clipboard_bridge_pid" ]] && printf active || printf unavailable)."
 
 set +e
 critical_pids=(

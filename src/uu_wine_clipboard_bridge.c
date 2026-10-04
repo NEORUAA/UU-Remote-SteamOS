@@ -545,13 +545,15 @@ cleanup:
     return sent;
 }
 
-static BOOL receive_host_image(void)
+static BOOL receive_host_clipboard(void)
 {
     uurb_x11_clipboard_request request = {
-        UURB_X11_CLIPBOARD_MAGIC, 0, 0, UURB_CLIPBOARD_GET_IMAGE};
+        UURB_X11_CLIPBOARD_MAGIC, 0, 0, UURB_CLIPBOARD_GET_HOST};
     uurb_x11_clipboard_response response;
     HGLOBAL v5 = NULL, dib = NULL;
-    char *data;
+    char *packet = NULL, *data;
+    DWORD kind, size;
+    UINT format;
     BITMAPINFOHEADER *header;
     BOOL result = FALSE;
 
@@ -566,39 +568,66 @@ static BOOL receive_host_image(void)
     }
     if (!response.result)
         return FALSE;
-    v5 = GlobalAlloc(GMEM_MOVEABLE, response.result);
-    data = v5 ? GlobalLock(v5) : NULL;
-    if (!data || !socket_read_all(clipboard_socket, data, (int)response.result) ||
-        response.result < 124 || *(DWORD *)data != 124) {
-        if (data)
-            GlobalUnlock(v5);
+    packet = HeapAlloc(GetProcessHeap(), 0, response.result);
+    if (!packet || !socket_read_all(clipboard_socket, packet, (int)response.result) ||
+        response.result <= sizeof(DWORD)) {
         close_clipboard_socket();
         goto done;
     }
-    dib = GlobalAlloc(GMEM_MOVEABLE, response.result - 124 + 40);
-    header = dib ? GlobalLock(dib) : NULL;
-    if (!header) {
+    memcpy(&kind, packet, sizeof(kind));
+    size = response.result - sizeof(kind);
+    data = packet + sizeof(kind);
+    if (kind == 0) {
+        int units;
+        wchar_t *text;
+        if (size > UURB_X11_CLIPBOARD_MAX_TEXT_BYTES)
+            goto done;
+        units = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, data, size, NULL, 0);
+        if (units <= 0)
+            goto done;
+        v5 = GlobalAlloc(GMEM_MOVEABLE, ((SIZE_T)units + 1) * sizeof(wchar_t));
+        text = v5 ? GlobalLock(v5) : NULL;
+        if (!text)
+            goto done;
+        MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, data, size, text, units);
+        text[units] = L'\0';
         GlobalUnlock(v5);
+        format = CF_UNICODETEXT;
+    } else if (kind == UURB_CLIPBOARD_DIB && size >= 124 && *(DWORD *)data == 124) {
+        void *pixels;
+        v5 = GlobalAlloc(GMEM_MOVEABLE, size);
+        pixels = v5 ? GlobalLock(v5) : NULL;
+        if (!pixels)
+            goto done;
+        memcpy(pixels, data, size);
+        GlobalUnlock(v5);
+        dib = GlobalAlloc(GMEM_MOVEABLE, size - 124 + 40);
+        header = dib ? GlobalLock(dib) : NULL;
+        if (!header)
+            goto done;
+        memcpy(header, data, 40);
+        header->biSize = 40;
+        header->biCompression = BI_RGB;
+        memcpy((char *)header + 40, data + 124, size - 124);
+        GlobalUnlock(dib);
+        format = CF_DIBV5;
+    } else {
         goto done;
     }
-    memcpy(header, data, 40);
-    header->biSize = 40;
-    header->biCompression = BI_RGB;
-    memcpy((char *)header + 40, data + 124, response.result - 124);
-    GlobalUnlock(dib);
-    GlobalUnlock(v5);
     if (!OpenClipboard(image_owner))
         goto done;
     if (EmptyClipboard()) {
-        if (SetClipboardData(CF_DIBV5, v5)) {
+        if (SetClipboardData(format, v5)) {
             v5 = NULL;
             result = TRUE;
         }
-        if (SetClipboardData(CF_DIB, dib))
+        if (dib && SetClipboardData(CF_DIB, dib))
             dib = NULL;
     }
     CloseClipboard();
 done:
+    if (packet)
+        HeapFree(GetProcessHeap(), 0, packet);
     if (v5)
         GlobalFree(v5);
     if (dib)
@@ -624,7 +653,7 @@ int wmain(void)
     extended_clipboard = GetEnvironmentVariableW(L"UURB_CLIPBOARD_EXTENDED",
         extended, ARRAYSIZE(extended)) == 1 && extended[0] == L'1';
     if (extended_clipboard) {
-        image_owner = CreateWindowExW(0, L"STATIC", L"UU bitmap clipboard",
+        image_owner = CreateWindowExW(0, L"STATIC", L"UU native clipboard",
             0, 0, 0, 0, 0, HWND_MESSAGE, NULL, GetModuleHandleW(NULL), NULL);
         if (!image_owner)
             return 3;
@@ -652,7 +681,7 @@ int wmain(void)
         if (sequence != 0 && sequence != delivered_sequence &&
             forward_current_clipboard(sequence))
             delivered_sequence = sequence;
-        if (extended_clipboard && receive_host_image())
+        if (extended_clipboard && receive_host_clipboard())
             delivered_sequence = GetClipboardSequenceNumber();
         while (PeekMessageW(&message, NULL, 0, 0, PM_REMOVE)) {
             TranslateMessage(&message);

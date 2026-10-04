@@ -83,12 +83,12 @@ int wmain(int argc, wchar_t **argv)
     ULONGLONG deadline;
     if (argc < 2 || !window) return 2;
     OleInitialize(NULL);
-    if (wcscmp(argv[1], L"read-image") == 0) {
+    if (wcscmp(argv[1], L"read-image") == 0 || wcscmp(argv[1], L"read-text") == 0) {
         HANDLE data, file;
         void *bytes;
         DWORD written;
         if (argc != 3 || !OpenClipboard(window)) return 3;
-        data = GetClipboardData(CF_DIBV5);
+        data = GetClipboardData(wcscmp(argv[1], L"read-text") == 0 ? CF_UNICODETEXT : CF_DIBV5);
         bytes = data ? GlobalLock(data) : NULL;
         if (!bytes) { CloseClipboard(); return 4; }
         file = CreateFileW(argv[2], GENERIC_WRITE, 0, NULL, CREATE_NEW,
@@ -111,6 +111,14 @@ int wmain(int argc, wchar_t **argv)
             wcscpy((wchar_t *)((char *)drop + sizeof(*drop)), argv[2]);
             GlobalUnlock(allocation);
             SetClipboardData(CF_HDROP, allocation);
+        } else if (wcscmp(argv[1], L"text") == 0) {
+            static const wchar_t text[] = L"Windows 中文\r\nsecond line";
+            void *bytes;
+            allocation = GlobalAlloc(GMEM_MOVEABLE, sizeof(text));
+            bytes = GlobalLock(allocation);
+            memcpy(bytes, text, sizeof(text));
+            GlobalUnlock(allocation);
+            SetClipboardData(CF_UNICODETEXT, allocation);
         } else {
             BITMAPV5HEADER *h;
             static const unsigned char pixels[] = {

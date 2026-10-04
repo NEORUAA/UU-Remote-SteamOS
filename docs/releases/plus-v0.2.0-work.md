@@ -18,7 +18,12 @@ logout or reboot is outside this persistence guarantee.
 
 The native owner publishes `image/png` and accepts PNG, common 24/32-bit DIB,
 and DIBV5 from Wine. Native PNG copies are converted to Win32 DIBV5 and DIB for
-the controller. Text continues through the existing clipboard route.
+the controller. UTF-8 text also travels in both directions through this native
+owner. While the extended companion is active, RDP CLIPRDR is disabled so the
+same image does not return through a second clipboard channel and overwrite a
+new controller copy. RDP still carries desktop video and physical input; if
+the native companion is unavailable at startup, its original clipboard remains
+enabled.
 
 Incoming files support exactly one CF_HDROP file or one OLE
 FileGroupDescriptorW with FileContents supplied as IStream or HGlobal. A
