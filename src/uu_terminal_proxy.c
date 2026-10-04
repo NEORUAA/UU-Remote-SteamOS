@@ -56,6 +56,7 @@ static void write_error(const char *message)
     }
 }
 
+static BOOL mux_runtime_persistent(void);
 #include "uu_terminal_mux_bootstrap.h"
 
 static int send_all(const void *buffer, size_t size)
@@ -239,6 +240,8 @@ static int runtime_configuration_path(char *path, size_t path_size)
     return 1;
 }
 
+static BOOL runtime_persistent;
+
 static int load_runtime_configuration(char *token, uint16_t *port)
 {
     static const char prefix[] = "version=1\nport=";
@@ -252,6 +255,8 @@ static int load_runtime_configuration(char *token, uint16_t *port)
     LARGE_INTEGER size;
     size_t port_length;
     int result = 0;
+
+    runtime_persistent = FALSE;
 
     if (!runtime_configuration_path(path, sizeof(path)))
         goto done;
@@ -280,12 +285,16 @@ static int load_runtime_configuration(char *token, uint16_t *port)
     if (strncmp(cursor, "token=", 6) != 0)
         goto done;
     cursor += 6;
-    if (strlen(cursor) != UURB_TERMINAL_TOKEN_LENGTH + 1 ||
+    if (strlen(cursor) < UURB_TERMINAL_TOKEN_LENGTH + 1 ||
         cursor[UURB_TERMINAL_TOKEN_LENGTH] != '\n')
         goto done;
+    const char *mode = cursor + UURB_TERMINAL_TOKEN_LENGTH + 1;
+    if (*mode && strcmp(mode, "session_mode=persistent\n") &&
+        strcmp(mode, "session_mode=fresh\n")) goto done;
     memcpy(token, cursor, UURB_TERMINAL_TOKEN_LENGTH);
     token[UURB_TERMINAL_TOKEN_LENGTH] = '\0';
     result = token_is_valid(token) && parse_port(port_text, port);
+    runtime_persistent = result && !strcmp(mode, "session_mode=persistent\n");
 
 done:
     if (file != INVALID_HANDLE_VALUE)
@@ -296,6 +305,17 @@ done:
     if (!result)
         SecureZeroMemory(token, UURB_TERMINAL_TOKEN_LENGTH + 1);
     return result;
+}
+
+/* Windows service children can rebuild their environment block. Use the
+ * same managed runtime handoff that already carries their authenticated port. */
+static BOOL mux_runtime_persistent(void)
+{
+    char token[UURB_TERMINAL_TOKEN_LENGTH + 1];
+    uint16_t port;
+    BOOL persistent = load_runtime_configuration(token, &port) && runtime_persistent;
+    SecureZeroMemory(token, sizeof(token));
+    return persistent;
 }
 
 static int load_configuration(char *token, uint16_t *port)

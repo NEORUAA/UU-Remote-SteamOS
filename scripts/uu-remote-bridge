@@ -1377,9 +1377,10 @@ start_terminal_bridge() {
                ((terminal_bridge_port <= 65535)); then
                 if ! (
                     umask 077
-                    printf 'version=1\nport=%s\ntoken=%s\n' \
+                    printf 'version=1\nport=%s\ntoken=%s\nsession_mode=%s\n' \
                         "$terminal_bridge_port" \
-                        "$terminal_bridge_token" >"$config_temporary"
+                        "$terminal_bridge_token" \
+                        "$terminal_session_mode" >"$config_temporary"
                 ) || ! chmod 600 "$config_temporary" ||
                    ! mv -f -- "$config_temporary" "$terminal_config_file"; then
                     log 'The UU terminal runtime handoff could not be written.'

@@ -6,8 +6,9 @@
 static BOOL mux_persistent(void)
 {
     WCHAR mode[16];
-    return GetEnvironmentVariableW(L"UURB_TERMINAL_SESSION_MODE", mode, ARRAYSIZE(mode)) == 10 &&
-           !wcscmp(mode, L"persistent");
+    DWORD length = GetEnvironmentVariableW(L"UURB_TERMINAL_SESSION_MODE", mode, ARRAYSIZE(mode));
+    if (length) return length == 10 && !wcscmp(mode, L"persistent");
+    return mux_runtime_persistent();
 }
 
 static unsigned long long mux_identity(const struct uurb_mux_plan *plan)
