@@ -1,0 +1,5 @@
+LIBRARY conpty.dll
+EXPORTS
+CreatePseudoConsole=uurb_create
+ResizePseudoConsole=uurb_resize
+ClosePseudoConsole=uurb_close

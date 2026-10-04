@@ -1581,6 +1581,11 @@ class Manager:
             uu_bin / "GameViewerHealthd.exe",
             uu_bin / "GameViewerHealthd.exe.uu-original",
             uu_bin / "powershell.exe",
+            uu_bin / "conpty.dll",
+            uu_bin / "conpty.dll.uu-original",
+            wine_prefix / "drive_c/windows/system32/WindowsPowerShell/v1.0/powershell.exe",
+            wine_prefix / "drive_c/windows/system32/WindowsPowerShell/v1.0/powershell.exe.uu-original",
+            wine_prefix / "drive_c/windows/system32/WindowsPowerShell/v1.0/uu-terminal-bridge.runtime",
         ]
 
     @staticmethod
@@ -1636,6 +1641,13 @@ class Manager:
             allowed = {str(path.relative_to(home)) for path in self.runtime_snapshot_paths()}
         except ValueError as error:
             raise UpdateError("runtime rollback path escaped its managed directory") from error
+        prefix = self.wine_prefix()
+        terminal_bin = prefix / "drive_c/Program Files/Netease/GameViewer/bin"
+        terminal_system = prefix / "drive_c/windows/system32/WindowsPowerShell/v1.0"
+        terminal_aliases = {
+            terminal_system / name: terminal_bin / name
+            for name in ("powershell.exe", "uu-terminal-bridge.runtime")
+        }
         validated = []
         seen = set()
         for entry in entries:
@@ -1653,12 +1665,18 @@ class Manager:
             source = files / relative
             try:
                 destination.parent.resolve().relative_to(home)
-                source.resolve().relative_to(files_root)
+                source.parent.resolve().relative_to(files_root)
+                if not source.is_symlink():
+                    source.resolve().relative_to(files_root)
             except ValueError as error:
                 raise UpdateError("runtime rollback path escaped its managed directory") from error
-            if source.is_symlink() or (entry["existed"] and not source.exists()):
+            if source.is_symlink():
+                target = terminal_aliases.get(destination)
+                if not entry["existed"] or target is None or os.readlink(source) != str(target):
+                    raise UpdateError("runtime rollback snapshot has an unmanaged terminal alias")
+            elif entry["existed"] and not source.exists():
                 raise UpdateError("runtime rollback snapshot item is missing or symlinked")
-            if source.is_dir():
+            if not source.is_symlink() and source.is_dir():
                 for item in source.rglob("*"):
                     if item.is_symlink():
                         try:

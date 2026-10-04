@@ -1160,6 +1160,7 @@ terminal_bridge_pid= manual_plane_pid=
                     str(root / "uu-terminal-proxy.exe"),
                     str(REPOSITORY / "src" / "uu_terminal_proxy.c"),
                     "-lws2_32",
+                    "-lshell32",
                 ],
                 check=True,
                 cwd=REPOSITORY,

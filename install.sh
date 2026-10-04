@@ -774,6 +774,8 @@ if [[ ! -f "$uu_dir/GameViewer.exe" || "$upgrade_existing" == true ]]; then
         sha256sum -c -
     mkdir -p "$wine_prefix"
     if [[ "$fresh_install" == true ]]; then
+        "$python_bin" "$repo_dir/scripts/manage-terminal-runtime.py" \
+            detach-system-links "$wine_prefix"
         "$wine_bin" wineboot -u
         "$wine_bin" winecfg -v win10
     else
@@ -829,6 +831,8 @@ if [[ -e "$terminal_proxy_install" ]] &&
     printf 'Refusing to replace an unknown GameViewer bin/powershell.exe.\n' >&2
     exit 1
 fi
+"$python_bin" "$repo_dir/scripts/manage-terminal-runtime.py" \
+    install "$wine_prefix" --build "$compat_build"
 install -m 0644 "$release_manifest" "$installed_manifest"
 install -m 0755 \
     "$compat_build/uu-cursor-guard.dll" \

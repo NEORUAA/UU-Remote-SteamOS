@@ -54,6 +54,7 @@ runtime_files=(
     scripts/uu-remote-console
     scripts/upgrade-uu-remote.sh
     scripts/verify.sh
+    scripts/manage-terminal-runtime.py
     src/uu_cursor_guard.c
     src/uu_display_mode.c
     src/uu_injector.c
@@ -78,6 +79,10 @@ runtime_files=(
     src/uu_service_control.c
     src/uu_terminal_bridge.c
     src/uu_terminal_proxy.c
+    src/uu_terminal_console.h
+    src/uu_terminal_mux_bootstrap.h
+    src/uu_conpty_compat.c
+    src/uu_conpty_compat.def
     src/uu_x11_input.c
     src/uu_x11_clipboard.c
     src/winlogon.c

@@ -9,6 +9,38 @@
 
 #include "terminal_bridge_protocol.h"
 
+
+/* UU's Wine ConPTY child can retain a mux pipe as stdin while stdout is a
+ * console. Use the attached console input in that case; ordinary pipe/file
+ * output keeps the existing stream handling. */
+static int configure_console_input(void)
+{
+    DWORD input_mode;
+    DWORD output_mode;
+    HANDLE output = GetStdHandle(STD_OUTPUT_HANDLE);
+    HANDLE input = GetStdHandle(STD_INPUT_HANDLE);
+
+    if (!GetConsoleMode(output, &output_mode))
+        return 1;
+    if (!GetConsoleMode(input, &input_mode)) {
+        input = CreateFileW(L"CONIN$", GENERIC_READ | GENERIC_WRITE,
+                            FILE_SHARE_READ | FILE_SHARE_WRITE, NULL,
+                            OPEN_EXISTING, 0, NULL);
+        if (input == INVALID_HANDLE_VALUE)
+            return 0;
+        if (!GetConsoleMode(input, &input_mode) ||
+            !SetStdHandle(STD_INPUT_HANDLE, input)) {
+            CloseHandle(input);
+            return 0;
+        }
+    }
+    return SetConsoleCP(CP_UTF8) && SetConsoleOutputCP(CP_UTF8) &&
+           SetConsoleMode(input, (input_mode & ~(ENABLE_LINE_INPUT |
+                          ENABLE_ECHO_INPUT | ENABLE_PROCESSED_INPUT)) |
+                          ENABLE_VIRTUAL_TERMINAL_INPUT) &&
+           SetConsoleMode(output, output_mode | ENABLE_VIRTUAL_TERMINAL_PROCESSING);
+}
+
 static SOCKET terminal_socket = INVALID_SOCKET;
 static CRITICAL_SECTION send_lock;
 static HANDLE stop_event;
@@ -23,6 +55,8 @@ static void write_error(const char *message)
         WriteFile(error_handle, "\r\n", 2, &written, NULL);
     }
 }
+
+#include "uu_terminal_mux_bootstrap.h"
 
 static int send_all(const void *buffer, size_t size)
 {
@@ -290,6 +324,12 @@ int main(void)
     int received;
     int exit_code = 1;
 
+    int bootstrap = mux_dispatch();
+    if (bootstrap != -1) return bootstrap;
+    if (!configure_console_input()) {
+        write_error("UU Ubuntu terminal bridge could not configure console input");
+        return 4;
+    }
     if (!load_configuration(token, &port)) {
         write_error("UU Ubuntu terminal bridge is not configured");
         return 2;

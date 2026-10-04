@@ -100,6 +100,9 @@ if [[ -e "$terminal_proxy" ]] &&
     exit 1
 fi
 
+"/usr/bin/python3" "$repo_dir/scripts/manage-terminal-runtime.py" \
+    restore "$wine_prefix" --dry-run
+
 if [[ "$dry_run" == true ]]; then
     printf 'PASS  audited server, health-monitor, and driver-helper backups can be restored.\n'
     printf 'INFO  purge=%s; no service, file, credential, or RDP setting changed.\n' \
@@ -135,6 +138,9 @@ fi
 if [[ -f "$devcon_backup" ]]; then
     install -m 0755 "$devcon_backup" "$devcon"
 fi
+"/usr/bin/python3" "$repo_dir/scripts/manage-terminal-runtime.py" \
+    restore "$wine_prefix"
+
 if [[ -f "$terminal_proxy" ]] &&
    /usr/bin/cmp -s "$terminal_proxy" "$installed_terminal_proxy"; then
     rm -f "$terminal_proxy" "$terminal_config"

@@ -880,6 +880,12 @@ else
     fail 'UU native Ubuntu terminal bridge or its runtime handoff is missing or stale'
 fi
 unset server_terminal_token terminal_config_token
+if /usr/bin/python3 "$repo_dir/scripts/manage-terminal-runtime.py" \
+    verify "$wine_prefix" >/dev/null 2>&1; then
+    pass 'UU terminal owns the ConPTY compatibility DLL, vendor backup, and system shell aliases'
+else
+    fail 'UU terminal ConPTY compatibility DLL or system shell aliases are missing/stale'
+fi
 
 saved_network_interface="$(saved_setting UURB_NETWORK_INTERFACE)"
 network_interface="${UURB_NETWORK_INTERFACE:-${saved_network_interface:-all}}"

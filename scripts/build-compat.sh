@@ -71,7 +71,10 @@ fi
     "$repo_dir/src/uu_wine_clipboard_bridge.c" -lws2_32
 "$cc" "${common[@]}" "${pe_link[@]}" -I "$repo_dir/src" \
     -o "$output_dir/uu-terminal-proxy.exe" \
-    "$repo_dir/src/uu_terminal_proxy.c" -lws2_32
+    "$repo_dir/src/uu_terminal_proxy.c" -lws2_32 -lshell32
+"$cc" "${common[@]}" "${pe_link[@]}" -shared \
+    -o "$output_dir/uu-conpty-compat.dll" \
+    "$repo_dir/src/uu_conpty_compat.c" "$repo_dir/src/uu_conpty_compat.def"
 "$cc" "${common[@]}" "${pe_link[@]}" -mwindows \
     -o "$output_dir/uu-healthd-stub.exe" \
     "$repo_dir/src/winlogon.c"
@@ -106,6 +109,7 @@ fi
     "$output_dir/uu-service-control.exe" \
     "$output_dir/uu-wine-clipboard-bridge.exe" \
     "$output_dir/uu-terminal-proxy.exe" \
+    "$output_dir/uu-conpty-compat.dll" \
     "$output_dir/uu-healthd-stub.exe" \
     "$output_dir/winpr-sspi-shim.dll"
 "$host_strip" \

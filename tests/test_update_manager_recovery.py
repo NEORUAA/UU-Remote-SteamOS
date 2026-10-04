@@ -258,6 +258,61 @@ class UpdateRecoveryTests(unittest.TestCase):
         for path in mirrors:
             self.assertEqual(path.read_bytes(), b"old terminal proxy")
 
+    def test_terminal_conpty_and_system_aliases_restore_together(self):
+        prefix = self.home / "custom prefix"
+        self.settings(f"UURB_WINEPREFIX={prefix}\n")
+        uu_bin = prefix / "drive_c/Program Files/Netease/GameViewer/bin"
+        system = prefix / "drive_c/windows/system32/WindowsPowerShell/v1.0"
+        files = [uu_bin / "conpty.dll", uu_bin / "conpty.dll.uu-original",
+                 system / "powershell.exe.uu-original"]
+        for path in files:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(b"original terminal artifact")
+        shell = system / "powershell.exe"
+        runtime = system / "uu-terminal-bridge.runtime"
+        shell.symlink_to(uu_bin / "powershell.exe")
+        runtime.symlink_to(uu_bin / "uu-terminal-bridge.runtime")
+        snapshot = self.manager.snapshot_live_runtime(self.home / "terminal-alias-snapshot")
+        for path in files:
+            path.write_bytes(b"updated artifact")
+        shell.unlink()
+        shell.write_bytes(b"foreign replacement")
+        runtime.unlink()
+        with patch("uu_update_manager.command_output", return_value=subprocess.CompletedProcess([], 0)), \
+                patch.object(self.manager, "health", return_value={"healthy": True}):
+            result = self.manager.restore_live_runtime(snapshot)
+        self.assertTrue(result["health"]["healthy"])
+        for path in files:
+            self.assertEqual(path.read_bytes(), b"original terminal artifact")
+        self.assertEqual(os.readlink(shell), str(uu_bin / "powershell.exe"))
+        self.assertEqual(os.readlink(runtime), str(uu_bin / "uu-terminal-bridge.runtime"))
+
+    def test_terminal_snapshot_alias_target_is_checked_before_live_mutation(self):
+        prefix = self.home / "custom prefix"
+        self.settings(f"UURB_WINEPREFIX={prefix}\n")
+        uu_bin = prefix / "drive_c/Program Files/Netease/GameViewer/bin"
+        system = prefix / "drive_c/windows/system32/WindowsPowerShell/v1.0"
+        system.mkdir(parents=True)
+        sentinel = self.home / "user file"
+        sentinel.write_text("must survive")
+        for name in ("powershell.exe", "uu-terminal-bridge.runtime"):
+            with self.subTest(alias=name):
+                alias = system / name
+                alias.symlink_to(uu_bin / name)
+                snapshot = self.manager.snapshot_live_runtime(self.home / f"alias-{name}")
+                saved = snapshot / "files" / alias.relative_to(self.home)
+                saved.unlink()
+                saved.symlink_to(sentinel)
+                alias.unlink()
+                alias.write_text("current live file")
+                with patch("uu_update_manager.command_output") as commands:
+                    with self.assertRaisesRegex(UpdateError, "unmanaged terminal alias"):
+                        self.manager.restore_live_runtime(snapshot)
+                commands.assert_not_called()
+                self.assertEqual(alias.read_text(), "current live file")
+                self.assertEqual(sentinel.read_text(), "must survive")
+                alias.unlink()
+
     def test_recovery_after_maintenance_death_restores_files_and_checks_process_identity(self):
         original = self.home / "runtime-file"
         original.write_text("working runtime")
