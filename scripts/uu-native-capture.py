@@ -81,6 +81,8 @@ def main():
     parser.add_argument('--backend', choices=['cpu', 'gpu'], required=True)
     parser.add_argument('--worker', type=Path, required=True)
     parser.add_argument('--runtime', type=Path, required=True)
+    parser.add_argument('--restore-file', type=Path,
+                        default=Path.home() / '.config/uu-remote-bridge/native-portal-restore-token')
     parser.add_argument('--duration', type=int, default=0)
     parser.add_argument('--gpu-socket-fd', type=int)
     parser.add_argument('--gpu-socket', type=Path)
@@ -92,7 +94,7 @@ def main():
     descriptor = None
     listener = peer = None
     try:
-        descriptor, node, info = session.start(args.runtime / 'portal-restore-token')
+        descriptor, node, info = session.start(args.restore_file)
         inherited = [descriptor]
         environment = {**os.environ}
         if args.backend == 'cpu':
