@@ -1,14 +1,18 @@
 #define _WIN32_WINNT 0x0A00
 #define WIN32_LEAN_AND_MEAN
+#include <winsock2.h>
 #include <windows.h>
 #include <tlhelp32.h>
+#include <shellapi.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
 #include <wchar.h>
 #include <stdio.h>
+#include "uu_terminal_direct_io.h"
 
-/* Retain Wine's console input/size and the vendor MUX, but
- * forward VT output to the original ConPTY pipe before Wine can reflow it. */
+/* UU viewers use authenticated raw pipes. Other ConPTY users keep the existing
+ * Wine input/size and raw console-output adapter. */
 typedef struct { HPCON pc; HANDLE output; } console_route;
 typedef struct { LPPROC_THREAD_ATTRIBUTE_LIST attributes; HPCON pc; } attribute_route;
 static console_route consoles[32];
@@ -34,6 +38,7 @@ static HANDLE console_output(HPCON pc)
 
 HRESULT WINAPI uurb_create(COORD size, HANDLE input, HANDLE output, DWORD flags, HPCON *pc)
 {
+    if (direct_controller()) return direct_create(size, input, output, flags, pc);
     HRESULT result = CreatePseudoConsole(size, input, output,
         flags & ~PSEUDOCONSOLE_INHERIT_CURSOR, pc);
 
@@ -57,11 +62,13 @@ HRESULT WINAPI uurb_create(COORD size, HANDLE input, HANDLE output, DWORD flags,
     return result;
 }
 
-HRESULT WINAPI uurb_resize(HPCON pc, COORD size) { return ResizePseudoConsole(pc, size); }
+HRESULT WINAPI uurb_resize(HPCON pc, COORD size)
+{
+    return pc && pc == direct_io.pc ? direct_resize(size) : ResizePseudoConsole(pc, size);
+}
 
 void WINAPI uurb_close(HPCON pc)
 {
-
     HANDLE retained = NULL;
     EnterCriticalSection(&routes_lock);
     for (unsigned i = 0; i < ARRAYSIZE(consoles); i++)
@@ -72,6 +79,7 @@ void WINAPI uurb_close(HPCON pc)
     for (unsigned i = 0; i < ARRAYSIZE(attributes); i++)
         if (attributes[i].pc == pc) memset(&attributes[i], 0, sizeof(attributes[i]));
     LeaveCriticalSection(&routes_lock);
+    if (pc == direct_io.pc && pc) { direct_trace("close", 0); direct_close(); return; }
     if (retained) CloseHandle(retained);
     ClosePseudoConsole(pc);
 }
@@ -225,7 +233,7 @@ static BOOL remote_call(HANDLE process, LPTHREAD_START_ROUTINE function, void *a
     return completed;
 }
 
-static BOOL adopt_child(PROCESS_INFORMATION *child, HANDLE output)
+static BOOL adopt_child(PROCESS_INFORMATION *child, HANDLE output, BOOL direct)
 {
     WCHAR path[32768], loader_path[MAX_PATH];
     inject_stage = "module-path";
@@ -259,6 +267,24 @@ static BOOL adopt_child(PROCESS_INFORMATION *child, HANDLE output)
     inject_stage = "loaded-child-base";
     ULONG_PTR base = child_module(child->dwProcessId, path);
     if (!base) goto failed;
+    if (direct) {
+        struct direct_child_events events = {0};
+        inject_stage = "duplicate-viewer-events";
+        if (!DuplicateHandle(GetCurrentProcess(), direct_io.ready, child->hProcess, &events.ready,
+            0, FALSE, DUPLICATE_SAME_ACCESS) ||
+            !DuplicateHandle(GetCurrentProcess(), direct_io.done, child->hProcess, &events.done,
+            0, FALSE, DUPLICATE_SAME_ACCESS)) goto failed;
+        inject_stage = "bind-viewer-events";
+        remote_path = VirtualAllocEx(child->hProcess, NULL, sizeof(events), MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+        if (!remote_path || !WriteProcessMemory(child->hProcess, remote_path, &events, sizeof(events), &copied) ||
+            copied != sizeof(events)) goto failed;
+        union { DWORD (WINAPI *bind)(void *); LPTHREAD_START_ROUTINE thread; ULONG_PTR address; } binder;
+        binder.bind = uurb_bind_direct;
+        binder.address = base + binder.address - (ULONG_PTR)self_module;
+        if (!remote_call(child->hProcess, binder.thread, remote_path, &result, &still_running) || !result) goto failed;
+        VirtualFreeEx(child->hProcess, remote_path, 0, MEM_RELEASE);
+        return TRUE;
+    }
     if (!output) return TRUE;
     HANDLE duplicated = NULL;
     inject_stage = "duplicate-output";
@@ -284,6 +310,7 @@ static BOOL WINAPI route_create_process(LPCWSTR application, LPWSTR command,
     LPSTARTUPINFOW startup, LPPROCESS_INFORMATION child)
 {
     HANDLE output = raw_output;
+    BOOL direct = FALSE;
     if ((flags & EXTENDED_STARTUPINFO_PRESENT) && startup &&
         startup->cb >= sizeof(STARTUPINFOEXW)) {
         LPPROC_THREAD_ATTRIBUTE_LIST list = ((STARTUPINFOEXW *)startup)->lpAttributeList;
@@ -292,10 +319,11 @@ static BOOL WINAPI route_create_process(LPCWSTR application, LPWSTR command,
         for (unsigned i = 0; i < ARRAYSIZE(attributes); i++)
             if (attributes[i].attributes == list) { pc = attributes[i].pc; break; }
         LeaveCriticalSection(&routes_lock);
-        if (pc) output = console_output(pc);
+        if (pc == direct_io.pc && pc) { direct = TRUE; output = NULL; }
+        else if (pc) output = console_output(pc);
     }
     BOOL selected = selected_child(application, command);
-    if (!selected || (!output && selected != 2))
+    if (!selected || (!output && !direct && selected != 2))
         return CreateProcessW(application, command, process_security, thread_security,
             inherit, flags, environment, directory, startup, child);
 
@@ -303,7 +331,7 @@ static BOOL WINAPI route_create_process(LPCWSTR application, LPWSTR command,
         inherit, flags | CREATE_SUSPENDED, environment, directory, startup, child)) {
         return FALSE;
     }
-    if (!adopt_child(child, output)) {
+    if (!adopt_child(child, output, direct)) {
 
         fprintf(stderr, "terminal-output-attach-failed stage=%s error=%lu\n", inject_stage, GetLastError());
         TerminateProcess(child->hProcess, ERROR_DLL_INIT_FAILED);

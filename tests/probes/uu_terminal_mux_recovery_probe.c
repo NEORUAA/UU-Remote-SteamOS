@@ -33,7 +33,7 @@ static DWORD cli(WCHAR **argv, const WCHAR *exe, const WCHAR *command, const WCH
     return code;
 }
 
-static BOOL connect_once(WCHAR **argv, BOOL attach)
+static BOOL connect_once(WCHAR **argv, BOOL attach, BOOL direct_input)
 {
     SECURITY_ATTRIBUTES security = {sizeof(security), NULL, TRUE};
     HANDLE inr, inw, outr, outw, ctlr, ctlw;
@@ -60,9 +60,10 @@ static BOOL connect_once(WCHAR **argv, BOOL attach)
     HANDLE capture = CreateFileW(argv[3], FILE_APPEND_DATA, FILE_SHARE_READ,
         NULL, OPEN_ALWAYS, 0, NULL);
     char captured[65536] = {0}; DWORD length = 0, code = STILL_ACTIVE;
-    BOOL sent = FALSE, executed = FALSE;
+    BOOL sent = FALSE, executed = FALSE, ctrl_marker = FALSE;
+    unsigned signal_stage = 0;
     const char *marker = attach ? "UURB_REATTACH_OK" : "UURB_BEFORE_CLOSE_OK";
-    for (unsigned tick = 0; tick < 80; tick++) {
+    for (unsigned tick = 0; tick < (direct_input ? 150U : 80U); tick++) {
         if (tick == 20) {
             char work[2048], state[2048], input[8192];
             WideCharToMultiByte(CP_UTF8, 0, argv[4], -1, work, sizeof(work), NULL, NULL);
@@ -75,6 +76,28 @@ static BOOL connect_once(WCHAR **argv, BOOL attach)
             sent = WriteFile(inw, input, (DWORD)strlen(input), &written, NULL)
                 && written == strlen(input);
         }
+        if (direct_input && executed && signal_stage == 0) {
+            char state[2048], input[4096]; DWORD written = 0;
+            WideCharToMultiByte(CP_UTF8, 0, argv[5], -1, state, sizeof(state), NULL, NULL);
+            snprintf(input, sizeof(input), "sleep 180 & uurb_fg_job=$!; printf '%%s\\n' \"$uurb_fg_job\" > '%s-fg-%s'; fg\r",
+                state, attach ? "attach" : "new");
+            if (!WriteFile(inw, input, (DWORD)strlen(input), &written, NULL) || written != strlen(input)) break;
+            signal_stage = 1;
+        }
+        if (direct_input && signal_stage == 1) {
+            WCHAR ready[4096];
+            swprintf(ready, ARRAYSIZE(ready), L"Z:%ls-fg-%ls-ready", argv[5], attach ? L"attach" : L"new");
+            if (GetFileAttributesW(ready) != INVALID_FILE_ATTRIBUTES) {
+                char state[2048], input[4096]; DWORD written = 0; const char interrupt = 0x03;
+                WideCharToMultiByte(CP_UTF8, 0, argv[5], -1, state, sizeof(state), NULL, NULL);
+                if (!WriteFile(inw, &interrupt, 1, &written, NULL) || written != 1) break;
+                Sleep(200);
+                snprintf(input, sizeof(input), "printf 'UURB_CTRL_%s_%%s\\n' 'OK'; printf '%%s %%s\\n' \"$$\" \"$uurb_recovery_job\" > '%s-ctrl-%s'\r",
+                    attach ? "ATTACH" : "NEW", state, attach ? "attach" : "new");
+                if (!WriteFile(inw, input, (DWORD)strlen(input), &written, NULL) || written != strlen(input)) break;
+                signal_stage = 2;
+            }
+        }
         DWORD available = 0;
         if (PeekNamedPipe(outr, NULL, 0, NULL, &available, NULL) && available) {
             char bytes[4096]; DWORD got = 0, written = 0;
@@ -83,16 +106,23 @@ static BOOL connect_once(WCHAR **argv, BOOL attach)
                 if (length + got < sizeof(captured)) {
                     memcpy(captured + length, bytes, got); length += got; captured[length] = 0;
                     executed = strstr(captured, marker) != NULL;
+                    ctrl_marker = strstr(captured, attach ? "UURB_CTRL_ATTACH_OK" : "UURB_CTRL_NEW_OK") != NULL;
                 }
             }
         }
         if (GetExitCodeProcess(child.hProcess, &code) && code != STILL_ACTIVE) break;
         Sleep(100);
+        if (direct_input && ctrl_marker) break;
     }
     printf("phase=%s before_close_exit=%lu bytes=%lu input_sent=%d exact_marker=%d mux_count=%u retained_cwd=%d\n",
         attach ? "attach" : "new", code, length, sent, executed, mux_count(),
         attach && (strstr(captured, "\r\n/tmp\r\n") != NULL || strstr(captured, "\n/tmp\n") != NULL));
     fflush(stdout);
+    if (direct_input) {
+        printf("phase=%s plain_marker_before_control=%d raw_Ctrl03_sent=%d post_control_marker=%d viewer_alive=%d\n",
+            attach ? "attach" : "new", executed, signal_stage == 2, ctrl_marker, code == STILL_ACTIVE);
+        fflush(stdout);
+    }
     if (capture != INVALID_HANDLE_VALUE) CloseHandle(capture);
     CloseHandle(inw); CloseHandle(ctlw);
     if (code == STILL_ACTIVE && WaitForSingleObject(child.hProcess, 2000) != WAIT_OBJECT_0) {
@@ -102,15 +132,17 @@ static BOOL connect_once(WCHAR **argv, BOOL attach)
     printf("phase=%s after_close_exit=%lu\n", attach ? "attach" : "new", code);
     fflush(stdout);
     CloseHandle(outr); CloseHandle(child.hThread); CloseHandle(child.hProcess);
-    return sent && executed;
+    return sent && executed && (!direct_input || (signal_stage == 2 && ctrl_marker && code == 0));
 }
 
 int wmain(int argc, WCHAR **argv)
 {
-    if (argc != 6) return 2;
-    BOOL first = connect_once(argv, FALSE);
+    BOOL direct_input = argc == 7 && !wcscmp(argv[6], L"--direct-input");
+    if (argc != 6 && !direct_input) return 2;
+    BOOL first = connect_once(argv, FALSE, direct_input);
     Sleep(1000);
     printf("after_first_close_mux_count=%u\n", mux_count()); fflush(stdout);
+    if (direct_input) return first && connect_once(argv, TRUE, TRUE) ? 0 : 5;
     WCHAR session[256], wrapper[4096], original[4096];
     swprintf(session, ARRAYSIZE(session), L"uurb-probe-%lu", GetCurrentProcessId());
     wcscpy(wrapper, argv[1]); WCHAR *leaf = wcsrchr(wrapper, L'/');
@@ -141,7 +173,7 @@ int wmain(int argc, WCHAR **argv)
     if (recovered != 0) return 5;
     DWORD off = cli(argv, wrapper, L"set-option", session, L"set-clipboard off");
     printf("owned_second_setting_off_exit=%lu\n", off); fflush(stdout);
-    BOOL second = connect_once(argv, TRUE);
+    BOOL second = connect_once(argv, TRUE, FALSE);
     return first && second && killed == 0 && absent == 1 && fresh == 1 && foreign == 1 &&
            unknown == 1 && invalid == 1 && still_absent == 1 && mode_absent && recovered == 0 && off == 0 ? 0 : 5;
 }

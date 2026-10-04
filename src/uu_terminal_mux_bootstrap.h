@@ -177,6 +177,8 @@ static int mux_execute(struct uurb_mux_plan *plan)
             return 4;
         }
     }
+    int direct = mux_direct_session_wait(plan);
+    if (direct >= 0) return direct;
     const WCHAR *base[] = {plan->mux, L"-L", L"uuyc-terminal", L"-f", plan->config};
     const WCHAR *attach[] = {base[0],base[1],base[2],base[3],base[4],L"attach",L"-t",plan->session,NULL};
     return (int)mux_run(plan->mux, attach, TRUE);

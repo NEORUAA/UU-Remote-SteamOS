@@ -74,7 +74,7 @@ fi
     "$repo_dir/src/uu_terminal_proxy.c" -lws2_32 -lshell32
 "$cc" "${common[@]}" "${pe_link[@]}" -shared \
     -o "$output_dir/uu-conpty-compat.dll" \
-    "$repo_dir/src/uu_conpty_compat.c" "$repo_dir/src/uu_conpty_compat.def"
+    "$repo_dir/src/uu_conpty_compat.c" "$repo_dir/src/uu_conpty_compat.def" -lws2_32 -lshell32
 "$cc" "${common[@]}" "${pe_link[@]}" -mwindows \
     -o "$output_dir/uu-healthd-stub.exe" \
     "$repo_dir/src/winlogon.c"

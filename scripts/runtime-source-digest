@@ -80,6 +80,8 @@ runtime_files=(
     src/uu_service_control.c
     src/uu_terminal_bridge.c
     src/uu_terminal_proxy.c
+    src/uu_terminal_runtime_config.h
+    src/uu_terminal_direct_io.h
     src/uu_terminal_console.h
     src/uu_terminal_mux_bootstrap.h
     src/uu_terminal_mux_recovery.h

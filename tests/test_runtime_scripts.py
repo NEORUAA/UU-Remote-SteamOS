@@ -1148,6 +1148,7 @@ terminal_bridge_pid= manual_plane_pid=
         digest = (REPOSITORY / "scripts" / "runtime-source-digest").read_text()
         native = (REPOSITORY / "src" / "uu_terminal_bridge.c").read_text()
         proxy = (REPOSITORY / "src" / "uu_terminal_proxy.c").read_text()
+        terminal_config = (REPOSITORY / "src" / "uu_terminal_runtime_config.h").read_text()
 
         self.assertIn("uu-terminal-bridge", builder)
         self.assertIn("uu-terminal-proxy.exe", builder)
@@ -1170,9 +1171,9 @@ terminal_bridge_pid= manual_plane_pid=
         self.assertIn("UURB_TERMINAL_FRAME_RESIZE", native)
         self.assertIn('setenv("TERM", "xterm-256color", 1)', native)
         self.assertIn('execl(shell, shell, "-l"', native)
-        self.assertIn("UURB_TERMINAL_BRIDGE_TOKEN", proxy)
-        self.assertIn("load_runtime_configuration", proxy)
-        self.assertIn("UURB_TERMINAL_CONFIG_FILENAME", proxy)
+        self.assertIn("UURB_TERMINAL_BRIDGE_TOKEN", terminal_config)
+        self.assertIn("load_runtime_configuration", terminal_config)
+        self.assertIn("UURB_TERMINAL_CONFIG_FILENAME", terminal_config)
         self.assertIn("INADDR_LOOPBACK", proxy)
         self.assertIn("GetConsoleScreenBufferInfo", proxy)
         self.assertTrue(

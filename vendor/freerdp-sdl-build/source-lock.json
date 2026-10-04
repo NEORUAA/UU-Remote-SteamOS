@@ -123,7 +123,7 @@
     "source": "src/winpr_sspi_shim.c",
     "source_sha256": "04ad4779ab7e5ef2663412af323f48130fffe79dea1b3f1dc1ab169659d813a5",
     "build_recipe": "scripts/build-compat.sh",
-    "build_recipe_sha256": "bbee2db250d0dd0a24d9e48c74fb8fec7eb7e9793429ec239c47ef645905fb97",
+    "build_recipe_sha256": "64c63d59561da77bfe11a3b84b4fb1e6ec779adc391af757825082f6e142fd59",
     "compiler": "/usr/bin/x86_64-w64-mingw32-gcc",
     "flags": [
       "-std=c11",
