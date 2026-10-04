@@ -1,0 +1,26 @@
+{
+  "upstream": "https://github.com/panxuc/uur",
+  "commit": "5245c9ee61c396e7a8bfbf718d6a403547cb2962",
+  "license": "MIT",
+  "files": {
+    "LICENSE": "b0dd67bfb0e46ec5be53c920cfad748943b68c9a59e0b41a0e36596dcff28d41",
+    "NOTICE": "29b65488341946180fb0eee216c96425d1cd36249fd7fe11ddc2d55613333ddd",
+    "capture/uur-pw-capture.c": "f9c382f2a73c15fe1438440713c581fe57e66ac1d3e9e15b47e9576839d1b238",
+    "hook/frame-protocol.h": "e28be752af7e79c60d279a1e31f51866c985b92522766ebdedafdf4a170c0c11",
+    "hook/cursor-overlay.h": "63cd2008ec8a33f45cae0d3cc45f8f8ae4fa88f11c454213d9d3125a96f3fdf3"
+  },
+  "adapted_from": {
+    "path": "hook/uur-hook.c",
+    "sha256": "fd95f563b607be2c5d69b430238de160f64b9664c448ccce0a57bfafc149775b",
+    "changes": "capture-only sections; removed SendInput/socket hooks; Plus frame configuration and status namespace"
+  },
+  "local_changes": [
+    "capture-only adapter with no input hooks; Plus namespaces; serialize shared scratch buffers; resolve dynamic GDI originals; optional external GPU endpoint constructor",
+    "CPU producer keeps latest queued frame; supports precise Portal stream serial if supplied",
+    "Correct 3-argument DXGI DuplicateOutput ABI; explicit native constructor success/error counters"
+  ],
+  "adapted_products": {
+    "capture/uur-pw-capture.c": "8f92368705c5193435e2e99924a8351d637f78edc2824a1efab9cd6a113c56d2",
+    "hook/plus-cpu-capture.c": "5213d3319327d5abda42e82e38ebbf90c8279cc2b2845106df6a5e803fb7fc3f"
+  }
+}
