@@ -9,6 +9,61 @@ REPOSITORY = Path(__file__).resolve().parents[1]
 
 
 class RuntimeScriptTests(unittest.TestCase):
+    def test_terminal_runtime_handoff_schema(self):
+        source = (REPOSITORY / "scripts/verify.sh").read_text()
+        start = source.index('terminal_config_version="$(')
+        condition = source.index('if [[ -x "$x11_terminal_bridge"', start)
+        socket_check = source.index('/usr/bin/ss -H -ltnp', condition)
+        predicate = source[condition + 3:socket_check].rstrip().removesuffix("&&")
+        script = (
+            'process_environment_value() { printf "%s" "$fixture_native_mode"; }\n'
+            + source[start:condition]
+            + "\nif " + predicate + "; then exit 0; else exit 1; fi\n"
+        )
+        token = "a" * 64
+        legacy = f"version=1\nport=45678\ntoken={token}\n"
+        persistent = legacy + "session_mode=persistent\n"
+        fresh = legacy + "session_mode=fresh\n"
+        cases = (
+            ("legacy", legacy, "persistent", 0o600, True),
+            ("persistent", persistent, "persistent", 0o600, True),
+            ("fresh", fresh, "fresh", 0o600, True),
+            ("unknown mode", legacy + "session_mode=other\n", "persistent", 0o600, False),
+            ("mode mismatch", fresh, "persistent", 0o600, False),
+            ("duplicate mode", persistent + "session_mode=persistent\n", "persistent", 0o600, False),
+            ("duplicate token", legacy + f"token={token}\n", "persistent", 0o600, False),
+            ("extra line", persistent + "extra=1\n", "persistent", 0o600, False),
+            ("unterminated tail", persistent + "extra=1", "persistent", 0o600, False),
+            ("missing final newline", persistent.rstrip("\n"), "persistent", 0o600, False),
+            ("wrong field order", f"version=1\ntoken={token}\nport=45678\nsession_mode=persistent\n", "persistent", 0o600, False),
+            ("invalid token", persistent.replace(token, "x" * 64), "persistent", 0o600, False),
+            ("different token", persistent.replace(token, "b" * 64), "persistent", 0o600, False),
+            ("wrong version", persistent.replace("version=1", "version=2"), "persistent", 0o600, False),
+            ("unsafe permissions", persistent, "persistent", 0o644, False),
+        )
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            executable = root / "executable"
+            executable.write_text("#!/bin/sh\nexit 0\n")
+            executable.chmod(0o755)
+            config = root / "uu-terminal-bridge.runtime"
+            environment = dict(
+                os.environ, x11_terminal_bridge=str(executable),
+                terminal_proxy=str(executable), terminal_proxy_compat=str(executable),
+                terminal_config=str(config), terminal_bridge_pid="4242",
+                terminal_bridge_port="45678", server_terminal_port="45678",
+                server_terminal_token=token,
+            )
+            for label, content, mode, permissions, accepted in cases:
+                with self.subTest(label=label):
+                    config.write_text(content)
+                    config.chmod(permissions)
+                    result = subprocess.run(
+                        ["bash", "-c", script], text=True, capture_output=True,
+                        env=dict(environment, fixture_native_mode=mode),
+                    )
+                    self.assertEqual(result.returncode, 0 if accepted else 1, result.stderr)
+
     def test_runtime_only_refresh_requires_explicit_reconnect_acknowledgement(self):
         script = REPOSITORY / "scripts" / "upgrade-uu-remote.sh"
         for arguments in (("apply", "--runtime-only"), ("status", "--runtime-only")):

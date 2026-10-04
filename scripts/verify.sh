@@ -849,6 +849,12 @@ terminal_config_port="$(
 terminal_config_token="$(
     /usr/bin/sed -n 's/^token=//p' "$terminal_config" 2>/dev/null || true
 )"
+terminal_config_session_mode="$(
+    /usr/bin/sed -n 's/^session_mode=//p' "$terminal_config" 2>/dev/null || true
+)"
+native_terminal_session_mode="$(
+    process_environment_value UURB_TERMINAL_SESSION_MODE "$terminal_bridge_pid" || true
+)"
 terminal_config_lines="$(
     /usr/bin/wc -l <"$terminal_config" 2>/dev/null || true
 )"
@@ -870,9 +876,19 @@ if [[ -x "$x11_terminal_bridge" &&
       "$terminal_config_port" == "$terminal_bridge_port" &&
       "$terminal_config_token" == "$server_terminal_token" &&
       "$terminal_config_token" =~ ^[0-9a-f]{64}$ &&
-      "$terminal_config_lines" == 3 &&
+      ( ( "$terminal_config_lines" == 3 && -z "$terminal_config_session_mode" ) ||
+        ( "$terminal_config_lines" == 4 &&
+          "$terminal_config_session_mode" =~ ^(fresh|persistent)$ &&
+          "$terminal_config_session_mode" == "$native_terminal_session_mode" ) ) &&
       "$terminal_config_mode" == 600 &&
       "$terminal_config_owner" == "$UID" ]] &&
+   /usr/bin/cmp -s "$terminal_config" <(
+       printf 'version=%s\nport=%s\ntoken=%s\n' \
+           "$terminal_config_version" "$terminal_config_port" "$terminal_config_token"
+       if [[ -n "$terminal_config_session_mode" ]]; then
+           printf 'session_mode=%s\n' "$terminal_config_session_mode"
+       fi
+   ) &&
    /usr/bin/ss -H -ltnp "sport = :$terminal_bridge_port" 2>/dev/null | \
        /usr/bin/grep -q "pid=$terminal_bridge_pid,"; then
     pass 'UU terminal uses the authenticated native Ubuntu PTY bridge and runtime handoff'
