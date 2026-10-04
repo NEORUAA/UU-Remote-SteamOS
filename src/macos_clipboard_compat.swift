@@ -10,6 +10,8 @@ final class ClipboardCompat: NSObject, NSApplicationDelegate {
     private var seenChange = -1
     private var timer: Timer?
     private var statusItem: NSStatusItem!
+    private var settingsWindow: NSWindow?
+    private var settingsSwitch: NSButton?
     private let toggleItem = NSMenuItem(title: "Enable PNG compatibility", action: nil, keyEquivalent: "")
     private let resultItem = NSMenuItem(title: "Waiting for a PNG image", action: nil, keyEquivalent: "")
     private let maxBytes = 64 * 1024 * 1024
@@ -30,6 +32,9 @@ final class ClipboardCompat: NSObject, NSApplicationDelegate {
         toggleItem.target = self
         toggleItem.action = #selector(toggle)
         menu.addItem(toggleItem)
+        let settings = NSMenuItem(title: "设置…", action: #selector(showSettings), keyEquivalent: ",")
+        settings.target = self
+        menu.addItem(settings)
         resultItem.isEnabled = false
         menu.addItem(resultItem)
         menu.addItem(.separator())
@@ -40,10 +45,15 @@ final class ClipboardCompat: NSObject, NSApplicationDelegate {
         updateToggle()
         timer = Timer.scheduledTimer(timeInterval: 0.15, target: self,
                                     selector: #selector(poll), userInfo: nil, repeats: true)
+        if !defaults.bool(forKey: "settingsOpened") {
+            showSettings()
+            defaults.set(true, forKey: "settingsOpened")
+        }
     }
 
     private func updateToggle() {
         toggleItem.state = enabled ? .on : .off
+        settingsSwitch?.state = enabled ? .on : .off
         statusItem.button?.toolTip = enabled ? "UU PNG clipboard compatibility enabled" : "UU PNG clipboard compatibility disabled"
     }
 
@@ -55,6 +65,36 @@ final class ClipboardCompat: NSObject, NSApplicationDelegate {
     }
 
     @objc private func quitHelper() { NSApp.terminate(nil) }
+
+    @objc private func showSettings() {
+        if settingsWindow == nil {
+            let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 420, height: 160),
+                                  styleMask: [.titled, .closable], backing: .buffered, defer: false)
+            window.title = "UU 图片兼容设置"
+            window.isReleasedWhenClosed = false
+            let button = NSButton(checkboxWithTitle: "启用 PNG 图片兼容", target: self,
+                                  action: #selector(toggle))
+            button.frame = NSRect(x: 20, y: 90, width: 380, height: 24)
+            let label = NSTextField(wrappingLabelWithString:
+                "UU 运行时自动兼容纯 PNG 图片，原图保留。关闭此窗口后继续在后台运行；可在 UU Clip 菜单中设置或退出。")
+            label.frame = NSRect(x: 20, y: 20, width: 380, height: 60)
+            window.contentView?.addSubview(button)
+            window.contentView?.addSubview(label)
+            window.center()
+            settingsWindow = window
+            settingsSwitch = button
+        }
+        updateToggle()
+        settingsWindow?.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+    }
+
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        showSettings()
+        return true
+    }
+
+    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { false }
 
     @objc private func poll() {
         guard enabled, NSWorkspace.shared.runningApplications.contains(where: {

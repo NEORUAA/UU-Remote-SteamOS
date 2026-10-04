@@ -24,7 +24,10 @@ open "build/macos/UU Clipboard Compat.app"
 ```
 
 The menu bar's **UU Clip** menu has an **Enable PNG compatibility** switch.
-It starts disabled until enabled and remembers that choice. For the authorized
+The first launch also shows **UU 图片兼容设置**, with a checkbox to enable it.
+The menu's **设置…** item and reopening the app show that window again. Closing
+the window keeps the helper running; **Quit** exits it. It starts disabled until
+enabled and remembers that choice. For the authorized
 controller verification, `open -a "build/macos/UU Clipboard Compat.app" --args
 --enable` enables it on launch. It stays local and records no clipboard body,
 file contents or network data. Disabling or quitting stops future conversions.
