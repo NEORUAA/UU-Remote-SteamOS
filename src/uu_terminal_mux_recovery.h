@@ -11,13 +11,29 @@ static BOOL mux_persistent(void)
     return mux_runtime_persistent();
 }
 
+/* Win32 accepts either separator for this same config file. UU's bootstrap
+ * and its later CLI queries can spell the path differently. */
+static WCHAR mux_config_char(WCHAR ch)
+{
+    return ch == L'/' ? L'\\' : ch;
+}
+
+static BOOL mux_same_config(const WCHAR *left, const WCHAR *right)
+{
+    while (mux_config_char(*left) == mux_config_char(*right)) {
+        if (!*left) return TRUE;
+        left++; right++;
+    }
+    return FALSE;
+}
+
 static unsigned long long mux_identity(const struct uurb_mux_plan *plan)
 {
     unsigned long long hash = 14695981039346656037ULL;
     const WCHAR *parts[] = {plan->config, plan->session};
     for (unsigned i = 0; i < ARRAYSIZE(parts); i++) {
         for (const WCHAR *p = parts[i]; *p; p++) {
-            hash ^= (unsigned)*p;
+            hash ^= (unsigned)(i == 0 ? mux_config_char(*p) : *p);
             hash *= 1099511628211ULL;
         }
         hash ^= 0; hash *= 1099511628211ULL;
@@ -48,7 +64,7 @@ static BOOL mux_read_owned(struct uurb_mux_plan *plan)
     if (!read || record.magic != 0x314d5555 || !record.plan.create ||
         record.plan.mux[4095] || record.plan.config[4095] || record.plan.shell[4095] ||
         record.plan.session[255] || record.plan.title[1023] ||
-        wcscmp(record.plan.mux, plan->mux) || wcscmp(record.plan.config, plan->config) ||
+        wcscmp(record.plan.mux, plan->mux) || !mux_same_config(record.plan.config, plan->config) ||
         wcscmp(record.plan.session, plan->session) ||
         !mux_executable(record.plan.shell, L"powershell.exe")) return FALSE;
     *plan = record.plan;
