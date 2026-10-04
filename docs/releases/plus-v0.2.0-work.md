@@ -43,7 +43,9 @@ A non-focusing **UU 文件接收** window shows the current filename and i/N,
 actual received/total bytes and percentages for the file and batch. Unknown
 totals stay indeterminate. Completion is displayed for five seconds; failure
 remains visible until dismissed. Interrupted copies remove the entire unfinished
-batch and leave the prior clipboard available. Counters measure bytes received
+batch and leave the prior clipboard available. A new copy in a native Ubuntu
+application also cancels the batch and keeps the new clipboard selection.
+Counters measure bytes received
 by this bridge; UU's earlier fetching of a delayed file does not expose a byte
 count. Local progress metadata is saved in
 `~/.local/state/uu-remote-bridge/clipboard-transfer.json`.
@@ -81,12 +83,16 @@ received identical RGB pixels. The original PNG need not be removed.
 
 The [optional Mac compatibility helper](../macos-clipboard-compat.md) preserves
 pure PNG bytes and adds TIFF automatically, with an enable/disable menu switch.
-It has compiled on the actual Mac; its ordinary Preview-copy path is pending
-GUI acceptance while that Mac is locked. The previous one-way RDP experiment
+Its first version compiled on the actual Mac. A settings window has since been
+added for GUI enabling; that revision and its ordinary Preview-copy path await
+Mac acceptance. The previous one-way RDP experiment
 was rolled back and is not part of this repair. The 19 isolated clipboard checks
-pass, including actual multi-file bytes, unknown totals and disconnect cleanup;
-the new multi-file runtime still awaits deployment and a real Mac two-file
-check. CPU/GPU prototypes still await actual Portal-to-UU integration and
+pass, including actual multi-file bytes, unknown totals and disconnect cleanup.
+A focused real X-selection probe also verifies that a native copy cancels an
+unfinished batch, removes its staged files, rejects a stale END and preserves
+the new native text. The initial multi-file version is installed with 27
+readiness checks passing; two review corrections await the next serial update
+and a real Mac two-file check. CPU/GPU prototypes still await actual Portal-to-UU integration and
 controller latency comparison.
 
 The upstream `docs/releases/v0.2.0.md` and published `v0.1.0` tag remain historical

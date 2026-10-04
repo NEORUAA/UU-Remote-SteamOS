@@ -390,7 +390,8 @@ class Clipboard:
                          "staged_path": str(path), "size": path.stat().st_size,
                          "sha256": hashlib.sha256(path.read_bytes()).hexdigest()})
         elif kind == FILE_BEGIN:
-            self.file_abort("Replaced by a new copy")
+            if self.file_transfer:
+                self.file_abort("Replaced by a new copy")
             self.file_transfer = FileTransfer(file_manifest(data), self.staging)
             self.file_update(force=True, new=True)
         elif kind == FILE_CHUNK:
@@ -484,6 +485,8 @@ class Clipboard:
     def event(self, event):
         if isinstance(event, xfixes.SelectionNotify):
             if event.selection == self.clip and event.owner != self.window:
+                if self.file_transfer:
+                    self.file_abort("Cancelled because a new native clipboard copy replaced the files")
                 self.image_dirty = True
         elif event.type == X.SelectionRequest:
             prop = event.property or event.target
