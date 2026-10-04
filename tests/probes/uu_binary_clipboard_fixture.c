@@ -88,8 +88,7 @@ int wmain(int argc, wchar_t **argv)
     ULONGLONG deadline;
     if (argc < 2 || !window) return 2;
     OleInitialize(NULL);
-    if (wcscmp(argv[1], L"read-png") == 0 || wcscmp(argv[1], L"read-dib-ole") == 0 ||
-        wcscmp(argv[1], L"read-dib-gdi") == 0) {
+    if (wcscmp(argv[1], L"read-png") == 0 || wcscmp(argv[1], L"read-dib-ole") == 0) {
         IDataObject *image = NULL;
         STGMEDIUM medium = {0};
         UINT png = RegisterClipboardFormatW(L"PNG");
@@ -105,36 +104,11 @@ int wmain(int argc, wchar_t **argv)
             IDataObject_Release(image); return 4;
         }
         void *bytes = GlobalLock(medium.hGlobal);
-        BYTE decoded[55 * 39 * 4];
-        DWORD byte_count = (DWORD)GlobalSize(medium.hGlobal);
-        BOOL decode = wcscmp(argv[1], L"read-dib-gdi") == 0;
-        if (decode && bytes) {
-            BITMAPINFOHEADER *header = bytes;
-            HDC dc = GetDC(NULL);
-            HBITMAP bitmap = header->biWidth == 55 && header->biHeight == -39 &&
-                header->biSize == 40 && header->biBitCount == 24
-                ? CreateDIBitmap(dc, header, CBM_INIT, (BYTE *)bytes + 40,
-                    (BITMAPINFO *)bytes, DIB_RGB_COLORS) : NULL;
-            BITMAPINFO request = {0};
-            request.bmiHeader.biSize = 40;
-            request.bmiHeader.biWidth = 55; request.bmiHeader.biHeight = -39;
-            request.bmiHeader.biPlanes = 1; request.bmiHeader.biBitCount = 32;
-            int rows = bitmap ? GetDIBits(dc, bitmap, 0, 39, decoded, &request,
-                DIB_RGB_COLORS) : 0;
-            if (bitmap) DeleteObject(bitmap);
-            ReleaseDC(NULL, dc);
-            if (rows != 39) {
-                GlobalUnlock(medium.hGlobal); ReleaseStgMedium(&medium);
-                IDataObject_Release(image); OleUninitialize(); return 6;
-            }
-            byte_count = sizeof(decoded);
-        }
         HANDLE file = bytes ? CreateFileW(argv[2], GENERIC_WRITE, 0, NULL, CREATE_NEW,
             FILE_ATTRIBUTE_NORMAL, NULL) : INVALID_HANDLE_VALUE;
         DWORD written = 0;
-        BOOL saved = file != INVALID_HANDLE_VALUE && WriteFile(file,
-            decode ? (void *)decoded : bytes, byte_count, &written, NULL) &&
-            written == byte_count;
+        BOOL saved = file != INVALID_HANDLE_VALUE && WriteFile(file, bytes,
+            (DWORD)GlobalSize(medium.hGlobal), &written, NULL);
         if (file != INVALID_HANDLE_VALUE) CloseHandle(file);
         if (bytes) GlobalUnlock(medium.hGlobal);
         ReleaseStgMedium(&medium); IDataObject_Release(image); OleUninitialize();

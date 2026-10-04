@@ -742,39 +742,20 @@ static BOOL receive_host_clipboard(void)
         format = CF_UNICODETEXT;
     } else if (kind == UURB_CLIPBOARD_DIB && size >= 124 && *(DWORD *)data == 124) {
         void *pixels;
-        const BITMAPV5HEADER *v5_header = (const BITMAPV5HEADER *)data;
-        const BITMAPINFOHEADER *source = (const BITMAPINFOHEADER *)data;
-        if (source->biWidth <= 0 || source->biHeight >= 0 ||
-            source->biHeight == (LONG)0x80000000U || source->biPlanes != 1 ||
-            source->biBitCount != 32 || source->biCompression != BI_BITFIELDS ||
-            v5_header->bV5RedMask != 0x00ff0000 ||
-            v5_header->bV5GreenMask != 0x0000ff00 ||
-            v5_header->bV5BlueMask != 0x000000ff)
-            goto done;
-        SIZE_T width = (SIZE_T)source->biWidth, height = (SIZE_T)-source->biHeight;
-        if (width * height * 4 != size - 124) goto done;
-        SIZE_T stride = (width * 3 + 3) & ~(SIZE_T)3;
-        SIZE_T dib_size = 40 + stride * height;
         v5 = GlobalAlloc(GMEM_MOVEABLE, size);
         pixels = v5 ? GlobalLock(v5) : NULL;
         if (!pixels)
             goto done;
         memcpy(pixels, data, size);
         GlobalUnlock(v5);
-        dib = GlobalAlloc(GMEM_MOVEABLE | GMEM_ZEROINIT, dib_size);
+        dib = GlobalAlloc(GMEM_MOVEABLE, size - 124 + 40);
         header = dib ? GlobalLock(dib) : NULL;
         if (!header)
             goto done;
         memcpy(header, data, 40);
         header->biSize = 40;
         header->biCompression = BI_RGB;
-        header->biBitCount = 24;
-        header->biSizeImage = (DWORD)(stride * height);
-        /* CF_DIB uses standard BGR24. PNG and DIBV5 retain the source alpha. */
-        for (SIZE_T y = 0; y < height; y++)
-            for (SIZE_T x = 0; x < width; x++)
-                memcpy((BYTE *)header + 40 + y * stride + x * 3,
-                    data + 124 + (y * width + x) * 4, 3);
+        memcpy((char *)header + 40, data + 124, size - 124);
         GlobalUnlock(dib);
         format = CF_DIBV5;
     } else {
