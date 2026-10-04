@@ -204,7 +204,15 @@ static BOOL read_clipboard_binary(DWORD sequence, char **output,
         *kind = UURB_CLIPBOARD_PNG;
     } else if (IsClipboardFormatAvailable(CF_DIBV5) ||
                IsClipboardFormatAvailable(CF_DIB)) {
-        format = IsClipboardFormatAvailable(CF_DIBV5) ? CF_DIBV5 : CF_DIB;
+        /* Wine can retain a synthesized V5 after the owner's original DIB
+         * changes. Preserve the publication order rather than prefer it. */
+        for (UINT candidate = EnumClipboardFormats(0); candidate;
+             candidate = EnumClipboardFormats(candidate)) {
+            if (candidate == CF_DIB || candidate == CF_DIBV5) {
+                format = candidate;
+                break;
+            }
+        }
         *kind = UURB_CLIPBOARD_DIB;
     }
     if (format)

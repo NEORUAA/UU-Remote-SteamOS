@@ -124,6 +124,16 @@ int wmain(int argc, wchar_t **argv)
             static const unsigned char pixels[] = {
                 0,0,255,255, 0,255,0,128, 255,0,0,255,
                 255,255,255,0, 30,20,10,255, 0,0,0,255};
+            if (wcscmp(argv[1], L"dib-stale-v5") == 0) {
+                BITMAPINFOHEADER *primary;
+                allocation = GlobalAlloc(GMEM_MOVEABLE | GMEM_ZEROINIT, 40 + sizeof(pixels));
+                primary = GlobalLock(allocation);
+                primary->biSize = 40; primary->biWidth = 3; primary->biHeight = -2;
+                primary->biPlanes = 1; primary->biBitCount = 32;
+                memcpy((char *)primary + 40, pixels, sizeof(pixels));
+                GlobalUnlock(allocation);
+                SetClipboardData(CF_DIB, allocation);
+            }
             allocation = GlobalAlloc(GMEM_MOVEABLE | GMEM_ZEROINIT, 124 + sizeof(pixels));
             h = GlobalLock(allocation);
             h->bV5Size = 124; h->bV5Width = 3; h->bV5Height = -2;
@@ -131,6 +141,10 @@ int wmain(int argc, wchar_t **argv)
             h->bV5RedMask = 0xff0000; h->bV5GreenMask = 0xff00;
             h->bV5BlueMask = 0xff; h->bV5AlphaMask = 0xff000000;
             memcpy((char *)h + 124, pixels, sizeof(pixels));
+            if (wcscmp(argv[1], L"dib-stale-v5") == 0) {
+                h->bV5Width = 1; h->bV5Height = -1;
+                memset((char *)h + 124, 0, sizeof(pixels));
+            }
             GlobalUnlock(allocation);
             SetClipboardData(CF_DIBV5, allocation);
         }

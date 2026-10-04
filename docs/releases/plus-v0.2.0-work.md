@@ -24,6 +24,8 @@ same image does not return through a second clipboard channel and overwrite a
 new controller copy. RDP still carries desktop video and physical input; if
 the native companion is unavailable at startup, its original clipboard remains
 enabled.
+Bitmap reads retain the owner's DIB publication order: a synthesized Wine V5
+cache must not take priority over a newly rendered original DIB.
 
 Incoming files support exactly one CF_HDROP file or one OLE
 FileGroupDescriptorW with FileContents supplied as IStream or HGlobal. A

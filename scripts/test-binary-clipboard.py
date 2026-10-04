@@ -104,6 +104,14 @@ def main():
                         (255,255,255,0), (10,20,30,255), (0,0,0,255)]
             assert Image.open(io.BytesIO(received)).convert("RGBA").tobytes() == bytes(
                 component for pixel in expected for component in pixel)
+            previous_at = state()["timestamp"]
+            launch([WINE, str(fixture), "dib-stale-v5"], windows)
+            wait_for(lambda: state().get("timestamp", 0) > previous_at)
+            received = subprocess.check_output(
+                ["xclip", "-selection", "clipboard", "-out", "-target", "image/png"],
+                env=host, timeout=5)
+            assert Image.open(io.BytesIO(received)).convert("RGB").tobytes() == bytes(
+                component for pixel in expected for component in pixel[:3])
             outgoing = Image.new("RGBA", (2, 1))
             outgoing.putdata([(7,8,9,255), (40,50,60,100)])
             encoded = io.BytesIO()
@@ -192,6 +200,7 @@ def main():
                               "text_unicode_multiline_each_direction": "PASS",
                               "same_pixels_PNG_BMP_echo_suppressed": "PASS",
                               "native_text_not_replayed": "PASS",
+                              "primary_DIB_over_stale_synthesized_V5": "PASS",
                               "single_file_HDROP": "PASS", "virtual_OLE_IStream": "PASS",
                               "URI_list_published": "PASS", "same_image_after_external_text": "PASS",
                               "path_traversal_rejected": "PASS", "duplicate_name_no_overwrite": "PASS",
