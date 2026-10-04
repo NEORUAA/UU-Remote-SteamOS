@@ -10,6 +10,7 @@ import tempfile
 
 VENDOR_CONPTY_SHA256 = "c46dcd04f52b97f6a8cf53e8f547c85a821660bed18de2b3344afcd4a8389ad6"
 TRIAL_CONPTY_SHA256 = "22a8b0195e2dc6a4e12199b240be36a6a41232fb4c9a0eea23b116679f32f80d"
+VENDOR_MUX_SHA256 = "ea50a845e3e614e87b57a98656ba9c391ed8c4cddc673647f9e2e9ac20a978d5"
 
 
 def digest(path: Path) -> str:
@@ -44,12 +45,17 @@ class TerminalRuntime:
         self.conpty = self.bin / "conpty.dll"
         self.original = self.bin / "conpty.dll.uu-original"
         self.managed = self.compat / "uu-conpty-compat.dll"
+        self.mux = self.bin / "uuyc-mux.exe"
+        self.mux_original = self.bin / "uuyc-mux.exe.uu-original"
+        self.mux_managed = self.compat / "uuyc-mux.exe"
+        self.mux_vendor = self.bin / "uu-terminal-vendor/uuyc-mux.exe"
         self.system = prefix / "drive_c/windows/system32/WindowsPowerShell/v1.0"
         self.shell = self.system / "powershell.exe"
         self.shell_original = self.system / "powershell.exe.uu-original"
         self.links = [(self.shell, self.bin / "powershell.exe"),
                       (self.system / "uu-terminal-bridge.runtime",
-                       self.bin / "uu-terminal-bridge.runtime")]
+                       self.bin / "uu-terminal-bridge.runtime"),
+                      (self.mux_vendor.parent / "conpty.dll", self.conpty)]
 
     @staticmethod
     def owned_link(path: Path, target: Path) -> bool:
@@ -88,18 +94,39 @@ class TerminalRuntime:
                 if path == self.shell and self.shell_original.exists():
                     atomic_copy(self.shell_original, self.shell)
 
+    def check_mux(self) -> None:
+        if self.mux_vendor.exists() and digest(self.mux_vendor) != VENDOR_MUX_SHA256:
+            raise ValueError("Unmanaged terminal vendor MUX runner")
+        if self.mux_original.exists() and digest(self.mux_original) != VENDOR_MUX_SHA256:
+            raise ValueError("MUX vendor backup differs from the audited build")
+        if self.mux.exists():
+            if digest(self.mux) == VENDOR_MUX_SHA256:
+                return
+            if self.mux_original.exists() and same(self.mux, self.mux_managed):
+                return
+            raise ValueError("Unmanaged GameViewer uuyc-mux.exe")
+        if not self.mux_original.exists():
+            raise ValueError("Missing audited vendor MUX and backup")
+
     def install(self, build: Path) -> None:
         self.check_conpty()
         self.check_links()
+        self.check_mux()
         source = build / "uu-conpty-compat.dll"
-        if not source.is_file():
-            raise ValueError("Missing built ConPTY compatibility DLL")
+        proxy = build / "uu-terminal-proxy.exe"
+        if not source.is_file() or not proxy.is_file():
+            raise ValueError("Missing built terminal compatibility DLL or proxy")
         if not self.original.exists():
             atomic_copy(self.conpty, self.original)
         if self.shell.exists() and not self.shell.is_symlink():
             atomic_copy(self.shell, self.shell_original)
+        if not self.mux_original.exists():
+            atomic_copy(self.mux, self.mux_original)
         atomic_copy(source, self.conpty)
         atomic_copy(source, self.managed)
+        atomic_copy(proxy, self.mux)
+        atomic_copy(proxy, self.mux_managed)
+        atomic_copy(self.mux_original, self.mux_vendor)
         self.system.mkdir(parents=True, exist_ok=True)
         for path, target in self.links:
             if self.owned_link(path, target):
@@ -110,8 +137,13 @@ class TerminalRuntime:
     def verify(self) -> None:
         self.check_conpty()
         self.check_links()
+        self.check_mux()
         if not same(self.conpty, self.managed) or not self.original.is_file():
             raise ValueError("ConPTY compatibility DLL or vendor backup is missing/stale")
+        if not same(self.mux, self.mux_managed) or not self.mux_original.is_file():
+            raise ValueError("MUX recovery proxy or vendor backup is missing/stale")
+        if not same(self.mux_vendor, self.mux_original):
+            raise ValueError("MUX vendor runner is missing/stale")
         for path, target in self.links:
             if not self.owned_link(path, target):
                 raise ValueError(f"Terminal system alias missing: {path}")
@@ -120,11 +152,20 @@ class TerminalRuntime:
         self.check_links()
         if self.original.exists() or self.managed.exists():
             self.check_conpty()
+        if self.mux_original.exists() or self.mux_managed.exists():
+            self.check_mux()
         if dry_run:
             return
         self.detach_system_links()
         if self.original.exists():
             atomic_copy(self.original, self.conpty)
+        if self.mux_original.exists():
+            atomic_copy(self.mux_original, self.mux)
+            self.mux_vendor.unlink(missing_ok=True)
+            try:
+                self.mux_vendor.parent.rmdir()
+            except OSError:
+                pass
 
 
 def main() -> int:

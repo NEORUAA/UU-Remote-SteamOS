@@ -139,21 +139,45 @@ static DWORD mux_run(const WCHAR *exe, const WCHAR *const *arguments, BOOL inter
     CloseHandle(child.hThread); CloseHandle(child.hProcess);
     return code;
 }
-static int mux_execute(struct uurb_mux_plan *plan)
+static DWORD mux_create_session(struct uurb_mux_plan *plan)
 {
     WCHAR target[258];
     const WCHAR *base[] = {plan->mux, L"-L", L"uuyc-terminal", L"-f", plan->config};
     DWORD code;
     swprintf(target, 258, L"%ls:", plan->session);
-    if (plan->create) {
+    {
         const WCHAR *create[] = {base[0],base[1],base[2],base[3],base[4],L"new",L"-d",L"-s",plan->session,L"--",plan->shell,L"-NoLogo",L"-NoProfile",NULL};
         const WCHAR *titles[] = {base[0],base[1],base[2],base[3],base[4],L"set-option",L"-t",target,L"set-titles-string",L"#W",NULL};
         const WCHAR *enable[] = {base[0],base[1],base[2],base[3],base[4],L"set-option",L"-t",target,L"set-titles",L"on",NULL};
         const WCHAR *rename[] = {base[0],base[1],base[2],base[3],base[4],L"rename-window",L"-t",target,plan->title,NULL};
         const WCHAR *status[] = {base[0],base[1],base[2],base[3],base[4],L"set-option",L"-t",target,L"status",L"off",NULL};
         const WCHAR *const *commands[] = {create,titles,enable,rename,status};
-        for (size_t i = 0; i < 5; i++) if ((code = mux_run(plan->mux, commands[i], FALSE)) != 0) return (int)code;
+        for (size_t i = 0; i < 5; i++) if ((code = mux_run(plan->mux, commands[i], FALSE)) != 0) {
+            fprintf(stderr, "terminal-mux-bootstrap-failed command_index=%u exit=%lu\n", (unsigned)i, code);
+            return code;
+        }
     }
+    return 0;
+}
+
+#include "uu_terminal_mux_recovery.h"
+
+static int mux_execute(struct uurb_mux_plan *plan)
+{
+    DWORD code;
+    if (plan->create) {
+        struct uurb_mux_plan creation = *plan;
+        WCHAR original[4096];
+        if (!mux_original_path(plan->mux, original, ARRAYSIZE(original))) return 64;
+        if (GetFileAttributesW(original) != INVALID_FILE_ATTRIBUTES)
+            wcscpy(creation.mux, original);
+        if ((code = mux_create_session(&creation)) != 0) return (int)code;
+        if (!mux_save_owned(plan)) {
+            write_error("UU terminal proxy could not record its owned persistent session");
+            return 4;
+        }
+    }
+    const WCHAR *base[] = {plan->mux, L"-L", L"uuyc-terminal", L"-f", plan->config};
     const WCHAR *attach[] = {base[0],base[1],base[2],base[3],base[4],L"attach",L"-t",plan->session,NULL};
     return (int)mux_run(plan->mux, attach, TRUE);
 }
@@ -163,6 +187,13 @@ static int mux_dispatch(void)
     int argc, result = -1;
     WCHAR **argv = CommandLineToArgvW(GetCommandLineW(), &argc);
     if (!argv) return 64;
+    WCHAR module[4096];
+    DWORD length = GetModuleFileNameW(NULL, module, ARRAYSIZE(module));
+    if (length && length < ARRAYSIZE(module) && mux_executable(module, L"uuyc-mux.exe")) {
+        result = mux_cli_dispatch(argc, argv, module);
+        LocalFree(argv);
+        return result;
+    }
     for (int i = 1; i < argc; i++) if (!_wcsicmp(argv[i], L"-Command")) {
         struct uurb_mux_plan plan;
         if (argc != 5 || i != 3 || _wcsicmp(argv[1], L"-NoLogo") || _wcsicmp(argv[2], L"-NoProfile") || !mux_parse(argv[i+1], &plan)) {

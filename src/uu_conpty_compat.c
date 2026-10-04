@@ -192,7 +192,8 @@ static BOOL selected_child(LPCWSTR application, LPCWSTR command)
         first[i] = 0; application = first;
     }
     const WCHAR *name = basename(application);
-    if (!_wcsicmp(name, L"powershell.exe") || !_wcsicmp(name, L"uuyc-mux.exe")) return TRUE;
+    if (!_wcsicmp(name, L"uuyc-mux.exe")) return 2;
+    if (!_wcsicmp(name, L"powershell.exe")) return TRUE;
     return FALSE;
 }
 
@@ -258,6 +259,7 @@ static BOOL adopt_child(PROCESS_INFORMATION *child, HANDLE output)
     inject_stage = "loaded-child-base";
     ULONG_PTR base = child_module(child->dwProcessId, path);
     if (!base) goto failed;
+    if (!output) return TRUE;
     HANDLE duplicated = NULL;
     inject_stage = "duplicate-output";
     if (!DuplicateHandle(GetCurrentProcess(), output, child->hProcess, &duplicated,
@@ -292,7 +294,8 @@ static BOOL WINAPI route_create_process(LPCWSTR application, LPWSTR command,
         LeaveCriticalSection(&routes_lock);
         if (pc) output = console_output(pc);
     }
-    if (!output || !selected_child(application, command))
+    BOOL selected = selected_child(application, command);
+    if (!selected || (!output && selected != 2))
         return CreateProcessW(application, command, process_security, thread_security,
             inherit, flags, environment, directory, startup, child);
 

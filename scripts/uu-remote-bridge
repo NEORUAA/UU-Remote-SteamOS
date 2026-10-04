@@ -1387,6 +1387,7 @@ start_terminal_bridge() {
                 fi
                 export UURB_TERMINAL_BRIDGE_PORT="$terminal_bridge_port"
                 export UURB_TERMINAL_BRIDGE_TOKEN="$terminal_bridge_token"
+                export UURB_TERMINAL_SESSION_MODE="$terminal_session_mode"
                 log "UU terminal requests use the authenticated native Ubuntu PTY bridge on loopback port $terminal_bridge_port."
                 return 0
             fi

@@ -21,24 +21,33 @@ class TerminalRuntimeTests(unittest.TestCase):
         self.runtime.system.mkdir(parents=True)
         self.runtime.compat.mkdir(parents=True)
         self.vendor = b"owned test vendor ConPTY"
+        self.vendor_mux = b"owned test vendor MUX"
         self.builtin = b"MZ" + b"\0" * 62 + b"Wine builtin DLL" + b"owned shell"
         self.runtime.conpty.write_bytes(self.vendor)
+        self.runtime.mux.write_bytes(self.vendor_mux)
         self.runtime.shell.write_bytes(self.builtin)
         self.runtime.shell.chmod(0o700)
         self.build = self.root / "build"
         self.build.mkdir()
         (self.build / "uu-conpty-compat.dll").write_bytes(b"owned compatibility v1")
+        (self.build / "uu-terminal-proxy.exe").write_bytes(b"owned proxy v1")
         patcher = patch.object(MODULE, "VENDOR_CONPTY_SHA256", hashlib.sha256(self.vendor).hexdigest())
         patcher.start()
         self.addCleanup(patcher.stop)
+        mux_patcher = patch.object(MODULE, "VENDOR_MUX_SHA256", hashlib.sha256(self.vendor_mux).hexdigest())
+        mux_patcher.start()
+        self.addCleanup(mux_patcher.stop)
 
     def test_install_upgrade_restore_preserves_originals_and_aliases(self):
         self.runtime.install(self.build)
         self.runtime.verify()
         self.assertEqual(self.runtime.original.read_bytes(), self.vendor)
+        self.assertEqual(self.runtime.mux_original.read_bytes(), self.vendor_mux)
+        self.assertEqual(self.runtime.mux_vendor.read_bytes(), self.vendor_mux)
         self.assertEqual(self.runtime.shell_original.read_bytes(), self.builtin)
         self.assertEqual(self.runtime.shell_original.stat().st_mode & 0o777, 0o700)
         (self.build / "uu-conpty-compat.dll").write_bytes(b"owned compatibility v2")
+        (self.build / "uu-terminal-proxy.exe").write_bytes(b"owned proxy v2")
         self.runtime.install(self.build)
         self.runtime.verify()
         self.assertEqual(self.runtime.original.read_bytes(), self.vendor)
@@ -46,6 +55,8 @@ class TerminalRuntimeTests(unittest.TestCase):
         self.assertTrue(self.runtime.shell.is_symlink())
         self.runtime.restore()
         self.assertEqual(self.runtime.conpty.read_bytes(), self.vendor)
+        self.assertEqual(self.runtime.mux.read_bytes(), self.vendor_mux)
+        self.assertFalse(self.runtime.mux_vendor.exists())
         self.assertEqual(self.runtime.shell.read_bytes(), self.builtin)
         self.assertFalse(self.runtime.links[1][0].exists())
 
@@ -82,6 +93,28 @@ class TerminalRuntimeTests(unittest.TestCase):
         self.runtime.managed.write_bytes(b"stale mirror")
         with self.assertRaises(ValueError):
             self.runtime.verify()
+
+    def test_unknown_mux_is_rejected_before_writes(self):
+        self.runtime.mux.write_bytes(b"user supplied MUX")
+        with self.assertRaisesRegex(ValueError, "Unmanaged"):
+            self.runtime.install(self.build)
+        self.assertFalse(self.runtime.original.exists())
+        self.assertFalse(self.runtime.mux_original.exists())
+        self.assertEqual(self.runtime.shell.read_bytes(), self.builtin)
+
+    def test_verify_detects_changed_mux_mirror(self):
+        self.runtime.install(self.build)
+        self.runtime.mux_managed.write_bytes(b"stale proxy")
+        with self.assertRaises(ValueError):
+            self.runtime.verify()
+
+    def test_foreign_vendor_runner_is_rejected_before_writes(self):
+        self.runtime.mux_vendor.parent.mkdir()
+        self.runtime.mux_vendor.write_bytes(b"foreign runner")
+        with self.assertRaisesRegex(ValueError, "Unmanaged"):
+            self.runtime.install(self.build)
+        self.assertFalse(self.runtime.original.exists())
+        self.assertEqual(self.runtime.mux_vendor.read_bytes(), b"foreign runner")
 
 
 if __name__ == "__main__":

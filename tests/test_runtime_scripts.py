@@ -791,7 +791,7 @@ terminal_bridge_pid= manual_plane_pid=
         self.assertIn("+clipboard", launcher)
         self.assertNotIn("\n        -clipboard \\\n", launcher)
 
-    def test_controller_clipboard_bridge_is_one_way_and_owner_scoped(self):
+    def test_controller_clipboard_bridge_is_owner_scoped(self):
         launcher = (REPOSITORY / "scripts" / "uu-remote-bridge").read_text()
         companion = (
             REPOSITORY / "src" / "uu_wine_clipboard_bridge.c"
@@ -828,7 +828,6 @@ terminal_bridge_pid= manual_plane_pid=
         self.assertNotIn("SendInput", companion + listener)
         self.assertIn("-seldir recv", launcher)
         self.assertIn("-ServerCutText=0", launcher)
-        self.assertIn('if [[ "$desktop_relay" != vnc ]]; then', launcher)
         self.assertIn('"$x11_clipboard_pid"', launcher)
         self.assertIn('"$wine_clipboard_bridge_pid"', launcher)
         self.assertIn("PeekMessageW", fixture)

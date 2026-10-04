@@ -82,6 +82,7 @@ runtime_files=(
     src/uu_terminal_proxy.c
     src/uu_terminal_console.h
     src/uu_terminal_mux_bootstrap.h
+    src/uu_terminal_mux_recovery.h
     src/uu_conpty_compat.c
     src/uu_conpty_compat.def
     src/uu_x11_input.c
