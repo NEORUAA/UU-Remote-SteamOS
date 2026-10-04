@@ -144,8 +144,8 @@ static DWORD mux_recover(struct uurb_mux_plan *plan, const WCHAR *original)
     return code;
 }
 
-/* Forward the vendor CLI unchanged except an exact owned has-session/attach
- * can reconstruct its Windows mux metadata in persistent mode. */
+/* Restore owned Windows mux metadata before UU's fixed clipboard setting or
+ * has-session/attach. Other vendor CLI forms are forwarded unchanged. */
 static int mux_cli_dispatch(int argc, WCHAR **argv, const WCHAR *module)
 {
     WCHAR original[4096];
@@ -155,16 +155,20 @@ static int mux_cli_dispatch(int argc, WCHAR **argv, const WCHAR *module)
     for (int i = 0; i < argc; i++) forward[i] = i ? argv[i] : original;
     forward[argc] = NULL;
     struct uurb_mux_plan plan = {0};
-    BOOL exact = argc == 8 && !wcscmp(argv[1], L"-L") && !wcscmp(argv[2], L"uuyc-terminal") &&
+    BOOL base = (argc == 8 || argc == 10) && !wcscmp(argv[1], L"-L") && !wcscmp(argv[2], L"uuyc-terminal") &&
         !wcscmp(argv[3], L"-f") && !wcscmp(argv[6], L"-t") &&
         wcslen(argv[4]) < ARRAYSIZE(plan.config) && wcslen(argv[7]) < ARRAYSIZE(plan.session);
+    BOOL exact = base && argc == 8;
+    BOOL clipboard_setting = base && argc == 10 && !wcscmp(argv[5], L"set-option") &&
+        !wcscmp(argv[8], L"set-clipboard") &&
+        (!wcscmp(argv[9], L"on") || !wcscmp(argv[9], L"off"));
     BOOL has = exact && !wcscmp(argv[5], L"has-session");
     BOOL attach = exact && !wcscmp(argv[5], L"attach");
     BOOL kill = exact && !wcscmp(argv[5], L"kill-session");
-    if (exact) { wcscpy(plan.mux, module); wcscpy(plan.config, argv[4]); wcscpy(plan.session, argv[7]); }
-    BOOL owned = exact && mux_read_owned(&plan);
+    if (exact || clipboard_setting) { wcscpy(plan.mux, module); wcscpy(plan.config, argv[4]); wcscpy(plan.session, argv[7]); }
+    BOOL owned = (exact || clipboard_setting) && mux_read_owned(&plan);
     DWORD code;
-    if ((has || attach) && owned && mux_persistent()) {
+    if ((has || attach || clipboard_setting) && owned && mux_persistent()) {
         code = mux_recover(&plan, original);
         if (code != 0 || has) goto done;
     }
