@@ -11,6 +11,7 @@
 #include <wchar.h>
 
 #include "x11_clipboard_protocol.h"
+#include "uu_clipboard_image_object.h"
 
 #define UURB_CLIPBOARD_POLL_MS 125UL
 #define UURB_CLIPBOARD_MAX_UNITS 1048576UL
@@ -23,6 +24,7 @@ static unsigned int diagnostic_reports;
 static BOOL extended_clipboard;
 static HWND image_owner;
 static HRESULT (WINAPI *get_ole_clipboard)(IDataObject **);
+static HRESULT (WINAPI *set_ole_clipboard)(IDataObject *);
 static void (WINAPI *release_medium)(STGMEDIUM *);
 static BOOL owner_is_gameviewer(void);
 
@@ -742,6 +744,19 @@ static BOOL receive_host_clipboard(void)
     } else {
         goto done;
     }
+    if (format == CF_DIBV5) {
+        IDataObject *image = set_ole_clipboard ? uurb_image_object_new(v5, dib) : NULL;
+        if (!image) {
+            report_clipboard_failure("native-image-object");
+            goto done;
+        }
+        v5 = dib = NULL;
+        result = SUCCEEDED(set_ole_clipboard(image));
+        IDataObject_Release(image);
+        if (!result)
+            report_clipboard_failure("native-image-publish");
+        goto done;
+    }
     if (!OpenClipboard(image_owner))
         goto done;
     if (EmptyClipboard()) {
@@ -773,6 +788,7 @@ int wmain(void)
         FARPROC address;
         HRESULT (WINAPI *initialize)(void *);
         HRESULT (WINAPI *get)(IDataObject **);
+        HRESULT (WINAPI *set)(IDataObject *);
         void (WINAPI *release)(STGMEDIUM *);
     } method;
 
@@ -791,6 +807,8 @@ int wmain(void)
             if (method.address && SUCCEEDED(method.initialize(NULL))) {
                 method.address = GetProcAddress(ole, "OleGetClipboard");
                 get_ole_clipboard = method.get;
+                method.address = GetProcAddress(ole, "OleSetClipboard");
+                set_ole_clipboard = method.set;
                 method.address = GetProcAddress(ole, "ReleaseStgMedium");
                 release_medium = method.release;
             }

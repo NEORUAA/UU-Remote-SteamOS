@@ -74,6 +74,7 @@ runtime_files=(
     src/full-input.c
     src/full-input.h
     src/uu_wine_clipboard_bridge.c
+    src/uu_clipboard_image_object.h
     src/uu_network_filter.c
     src/uu_manager_capture.c
     src/uu_service_control.c
