@@ -3,14 +3,17 @@
 
 #include <stdint.h>
 
-/* This intentionally has a protocol of its own.  Text copied by a UU
- * controller arrives in Wine's Win32 clipboard, not in the private X11
- * selection.  The listener below only writes the selected host X11 desktop;
- * it has no receive path back into Wine or VNC. */
+/* Authenticated Wine-to-desktop transport. Kind zero retains the original
+ * text request; extended kinds carry images, image reads and incoming files. */
 #define UURB_X11_CLIPBOARD_MAGIC UINT32_C(0x43425555)
 #define UURB_X11_CLIPBOARD_VERSION UINT32_C(1)
 #define UURB_X11_CLIPBOARD_TOKEN_SIZE 64
 #define UURB_X11_CLIPBOARD_MAX_TEXT_BYTES UINT32_C(4194304)
+#define UURB_CLIPBOARD_MAX_BINARY UINT32_C(67108864)
+#define UURB_CLIPBOARD_PNG 1U
+#define UURB_CLIPBOARD_DIB 2U
+#define UURB_CLIPBOARD_GET_IMAGE 3U
+#define UURB_CLIPBOARD_FILE 4U
 
 #define UURB_X11_CLIPBOARD_ERROR_BAD_REQUEST UINT32_C(0x3001)
 #define UURB_X11_CLIPBOARD_ERROR_INVALID_TEXT UINT32_C(0x3002)

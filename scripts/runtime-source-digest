@@ -6,6 +6,7 @@ repo_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$repo_dir"
 
 runtime_files=(
+    VERSION
     install.sh
     uninstall.sh
     patches/libei-1.2.1-close-keymap-fd.patch
@@ -38,6 +39,7 @@ runtime_files=(
     scripts/uu-cursor-asset.py
     scripts/uu-rdp-credentials.py
     scripts/uu-quality.py
+    scripts/uu-clipboard-native.py
     scripts/uu-controller-fit.py
     scripts/uu-display-modes.py
     scripts/uu-desktop-tool.py

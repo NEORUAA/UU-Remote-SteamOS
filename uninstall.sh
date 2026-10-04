@@ -161,6 +161,7 @@ rm -f \
     "$HOME/.local/libexec/uu-connection-status" \
     "$HOME/.local/libexec/uu-cursor-asset.py" \
     "$HOME/.local/libexec/uu-quality.py" \
+    "$HOME/.local/libexec/uu-clipboard-native.py" \
     "$HOME/.local/libexec/uu-desktop-tool.py" \
     "$HOME/.local/libexec/uu-inspect-wine-device-registry.py" \
     "$HOME/.local/libexec/uu-remote-stop-wine-prefix" \

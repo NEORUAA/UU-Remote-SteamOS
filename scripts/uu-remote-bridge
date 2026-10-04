@@ -24,6 +24,7 @@ cursor_guard_setting="${UURB_CURSOR_GUARD:-off}"
 cursor_size_setting="${UURB_CURSOR_SIZE:-auto}"
 uu_audio_setting="${UURB_UU_AUDIO:-system}"
 libei_mode="${UURB_LIBEI_MODE:-auto}"
+terminal_session_mode="${UURB_TERMINAL_SESSION_MODE:-fresh}"
 wine_prefix="${UURB_WINEPREFIX:-$HOME/.local/share/wineprefixes/uu-remote}"
 service_name="${UURB_SERVICE_NAME:-uu-remote-bridge.service}"
 environment_file="$HOME/.config/uu-remote-bridge/environment"
@@ -37,6 +38,11 @@ systemctl_user=(
     "DBUS_SESSION_BUS_ADDRESS=unix:path=${XDG_RUNTIME_DIR:-/run/user/$UID}/bus"
     /usr/bin/systemctl --user
 )
+
+if [[ "$terminal_session_mode" != fresh && "$terminal_session_mode" != persistent ]]; then
+    printf 'UURB_TERMINAL_SESSION_MODE must be fresh or persistent.\n' >&2
+    exit 2
+fi
 
 if [[ "$input_route" != legacy && "$input_route" != rdp-public ]] ||
    [[ "$input_route" == rdp-public && "$desktop_relay" != rdp ]] ||
@@ -178,7 +184,7 @@ full_sdl_linux_start=""
 public_input_ready=false
 public_input_log="$WINEPREFIX/drive_c/users/$bridge_user/AppData/Local/Temp/uu-input-bridge.log"
 x11_input_helper="$compat_dir/uu-x11-input"
-x11_clipboard_helper="$compat_dir/uu-x11-clipboard"
+x11_clipboard_helper="$HOME/.local/libexec/uu-clipboard-native.py"
 wine_clipboard_bridge_exe="$compat_dir/uu-wine-clipboard-bridge.exe"
 network_filter="$compat_dir/uu-network-filter.so"
 input_injector_exe="$compat_dir/uu-injector.exe"
@@ -1266,15 +1272,12 @@ start_x11_input_helper() {
 start_x11_clipboard_helper() {
     local selected_xauthority
 
-    if [[ "$desktop_relay" != vnc ]]; then
-        return 0
-    fi
     if [[ ! -x "$x11_clipboard_helper" ]]; then
-        log 'The optional one-way X11 clipboard helper is missing; retaining the existing clipboard behavior.'
+        log 'The native clipboard helper is missing; retaining the existing clipboard behavior.'
         return 0
     fi
-    if [[ "$desktop_session_type" != x11 || -z "$desktop_display" ]]; then
-        log "One-way Mac clipboard forwarding requires the selected physical X11 desktop; selected ${desktop_session_type:-unknown}."
+    if [[ -z "$desktop_display" ]]; then
+        log "Clipboard forwarding requires the selected desktop X11/XWayland display."
         return 0
     fi
     selected_xauthority="$desktop_xauthority"
@@ -1304,7 +1307,7 @@ start_x11_clipboard_helper() {
             read -r x11_clipboard_port <"$x11_clipboard_ready_file"
             if [[ "$x11_clipboard_port" =~ ^[1-9][0-9]{0,4}$ ]] && \
                ((x11_clipboard_port <= 65535)); then
-                log "One-way Wine-to-$desktop_display text clipboard helper is ready."
+                log "Bitmap/file clipboard helper on $desktop_display is ready."
                 return 0
             fi
         fi
@@ -1314,7 +1317,7 @@ start_x11_clipboard_helper() {
         sleep 0.1
     done
 
-    log 'The optional one-way X11 clipboard helper did not become ready; retaining the existing clipboard behavior.'
+    log 'The native clipboard helper did not become ready; retaining the existing clipboard behavior.'
     kill "$x11_clipboard_pid" >/dev/null 2>&1 || true
     x11_clipboard_pid=""
     x11_clipboard_port=""
@@ -1330,6 +1333,7 @@ start_wine_clipboard_bridge() {
     /usr/bin/env \
         "UURB_X11_CLIPBOARD_PORT=$x11_clipboard_port" \
         "UURB_X11_CLIPBOARD_TOKEN=$x11_clipboard_token" \
+        UURB_CLIPBOARD_EXTENDED=1 \
         /opt/wine-stable/bin/wine "$wine_clipboard_bridge_exe" \
         >>"$state_dir/wine-clipboard-bridge.log" 2>&1 &
     wine_clipboard_bridge_pid=$!
@@ -1339,7 +1343,7 @@ start_wine_clipboard_bridge() {
         wine_clipboard_bridge_pid=""
         return 0
     fi
-    log 'Mac/UU clipboard forwarding is active: GameViewer CF_UNICODETEXT -> physical X11 only.'
+    log 'UU clipboard adapter active: bidirectional bitmap and incoming single-file, plus text.'
 }
 
 start_terminal_bridge() {
@@ -1360,6 +1364,7 @@ start_terminal_bridge() {
     terminal_bridge_token="$(/usr/bin/openssl rand -hex 32)"
     /usr/bin/env \
         UURB_TERMINAL_BRIDGE_TOKEN="$terminal_bridge_token" \
+        UURB_TERMINAL_SESSION_MODE="$terminal_session_mode" \
         "$terminal_bridge_helper" --ready-file "$terminal_ready_file" \
         >>"$state_dir/terminal-bridge.log" 2>&1 &
     terminal_bridge_pid=$!

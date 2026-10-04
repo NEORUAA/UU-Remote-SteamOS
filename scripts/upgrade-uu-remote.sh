@@ -128,7 +128,7 @@ print(value.get("repository", ""))
 PY
             )"
         else
-            candidate="$HOME/ProjectsLFS/uu-remote-ubuntu-bridge"
+            candidate="$HOME/Projects/uu-remote-ubuntu-plus"
         fi
     fi
     [[ -n "$candidate" ]] || fail 'could not discover the source repository'
@@ -311,6 +311,7 @@ backup_paths=(
     "$HOME/.local/libexec/uu-inspect-wine-device-registry.py"
     "$HOME/.local/libexec/uu-cursor-asset.py"
     "$HOME/.local/libexec/uu-quality.py"
+    "$HOME/.local/libexec/uu-clipboard-native.py"
     "$HOME/.local/libexec/uu-desktop-tool.py"
     "$HOME/.local/share/uu-remote/tools"
     "$wine_prefix/compat"

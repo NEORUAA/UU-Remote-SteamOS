@@ -142,6 +142,44 @@ In the remote UU client:
 The `cmd` choice remains Wine's diagnostic command processor. Use the
 `PowerShell` choice for the native Ubuntu shell.
 
+## Keep the terminal across reconnects (opt-in)
+
+The default `UURB_TERMINAL_SESSION_MODE=fresh` opens a new login shell and
+ends it on disconnect. After installing a build containing this feature,
+enable persistence in the existing service environment file:
+
+```bash
+sed -i '/^UURB_TERMINAL_SESSION_MODE=/d' ~/.config/uu-remote-bridge/environment
+printf '%s\n' 'UURB_TERMINAL_SESSION_MODE=persistent' >> ~/.config/uu-remote-bridge/environment
+```
+
+The setting takes effect at the next controlled bridge restart (`uu-remote
+restart` disconnects the desktop too). Installation preserves the saved
+setting; it does not enable persistence by default. To return to fresh mode,
+use the same commands with `fresh` instead of `persistent`, then apply at the
+next controlled restart. No restart is performed just by saving the setting.
+
+Persistence uses the existing `/usr/bin/tmux`, an independent socket at
+`${XDG_RUNTIME_DIR:-/run/user/$UID}/uu-remote-bridge/terminal-tmux.sock`, and a
+workspace named `main`. It does not load your tmux configuration or use your
+normal tmux server. All UU terminal windows share `main`: input, shell state,
+and the workspace are shared. Disconnecting closes only the attach client;
+reconnecting returns to the same shell, working directory and running jobs.
+Transport EOF also detaches; typed Ctrl-D and `exit` remain shell input.
+Resize still travels through the existing PTY protocol. The account's home,
+shell and login configuration are retained; transport token and port are
+removed before starting tmux. If tmux cannot be executed, the terminal reports
+that it is falling back to fresh mode; no dependency is installed.
+
+Use `Ctrl-b d` to detach. `exit` closes the current shell; `tmux kill-session
+-t main` inside this workspace ends the entire workspace and its jobs. The
+next connection creates a new `main`. Persistence covers terminal disconnects,
+not logout, reboot, or a full bridge-service restart.
+
+Run the short native-only probe with `python3 scripts/test-terminal-persistence.py`.
+It compiles a helper in a temporary directory and uses only its own tmux socket.
+Actual UU-controller reconnect behavior still requires controller acceptance.
+
 ## Verification
 
 The isolated test creates a disposable Wine prefix and never touches the

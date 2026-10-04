@@ -28,6 +28,8 @@
 static volatile sig_atomic_t stop_requested;
 static volatile sig_atomic_t children_changed;
 static pid_t handlers[MAX_SESSIONS];
+static bool persistent_session;
+static char tmux_socket[4096];
 
 static void handle_signal(int signal_number)
 {
@@ -217,6 +219,18 @@ static void run_login_shell(void)
     setenv("TERM", "xterm-256color", 1);
     if (chdir(home) != 0)
         _exit(126);
+    if (persistent_session) {
+        unsetenv("TMUX");
+        if (access("/usr/bin/tmux", X_OK) == 0) {
+            printf("\r\n[UU] Shared main workspace; disconnect keeps tasks running.\r\n");
+            fflush(stdout);
+            execl("/usr/bin/tmux", "tmux", "-u", "-f", "/dev/null",
+                  "-S", tmux_socket, "new-session", "-A", "-s", "main",
+                  (char *)NULL);
+        }
+        fprintf(stderr, "\r\n[UU] tmux unavailable; opening a fresh login shell. "
+                        "Disconnect will end this shell.\r\n");
+    }
     execl(shell, shell, "-l", (char *)NULL);
     _exit(127);
 }
@@ -343,8 +357,13 @@ static int relay_session(int client, const char *expected_token)
             } else if (frame.type == UURB_TERMINAL_FRAME_EOF) {
                 unsigned char end_of_input = 4;
 
-                if (length != 0 ||
-                    !write_all_fd(pty_master, &end_of_input, 1))
+                if (length != 0)
+                    break;
+                if (persistent_session) {
+                    result = 0;
+                    break;
+                }
+                if (!write_all_fd(pty_master, &end_of_input, 1))
                     break;
             } else {
                 break;
@@ -427,6 +446,7 @@ static int write_ready_file(const char *path, uint16_t port)
 int main(int argc, char **argv)
 {
     const char *token = getenv("UURB_TERMINAL_BRIDGE_TOKEN");
+    const char *session_mode = getenv("UURB_TERMINAL_SESSION_MODE");
     const char *ready_file = NULL;
     struct sockaddr_in address;
     socklen_t address_size = sizeof(address);
@@ -443,6 +463,23 @@ int main(int argc, char **argv)
         !token_is_valid(token)) {
         fprintf(stderr, "usage: uu-terminal-bridge --ready-file /absolute/path\n");
         return 2;
+    }
+    if (session_mode != NULL && strcmp(session_mode, "fresh") != 0 &&
+        strcmp(session_mode, "persistent") != 0) {
+        fprintf(stderr, "UURB_TERMINAL_SESSION_MODE must be fresh or persistent\n");
+        return 2;
+    }
+    persistent_session = session_mode != NULL &&
+                         strcmp(session_mode, "persistent") == 0;
+    if (persistent_session) {
+        const char *separator = strrchr(ready_file, '/');
+
+        if (snprintf(tmux_socket, sizeof(tmux_socket), "%.*s/terminal-tmux.sock",
+                     (int)(separator - ready_file), ready_file) >=
+            (int)sizeof(tmux_socket)) {
+            fprintf(stderr, "terminal tmux socket path is too long\n");
+            return 2;
+        }
     }
     memset(&action, 0, sizeof(action));
     sigemptyset(&action.sa_mask);

@@ -1556,6 +1556,7 @@ class Manager:
             home / ".local/libexec/uu-inspect-wine-device-registry.py",
             home / ".local/libexec/uu-cursor-asset.py",
             home / ".local/libexec/uu-quality.py",
+            home / ".local/libexec/uu-clipboard-native.py",
             home / ".local/libexec/uu-desktop-tool.py",
             home / ".local/share/uu-remote/tools",
             home / ".config/uu-remote-bridge/environment",

@@ -73,6 +73,7 @@ saved_network_interface="$(saved_setting UURB_NETWORK_INTERFACE)"
 saved_cursor_guard="$(saved_setting UURB_CURSOR_GUARD)"
 saved_cursor_size="$(saved_setting UURB_CURSOR_SIZE)"
 saved_libei_mode="$(saved_setting UURB_LIBEI_MODE)"
+saved_terminal_session_mode="$(saved_setting UURB_TERMINAL_SESSION_MODE)"
 saved_console_vnc_port="$(saved_setting UURB_CONSOLE_VNC_PORT)"
 saved_console_web_port="$(saved_setting UURB_CONSOLE_WEB_PORT)"
 saved_window_scale="$(saved_setting UURB_WINDOW_SCALE)"
@@ -97,6 +98,11 @@ cursor_size="${UURB_CURSOR_SIZE:-${saved_cursor_size:-auto}}"
 console_vnc_port="${UURB_CONSOLE_VNC_PORT:-${saved_console_vnc_port:-5920}}"
 console_web_port="${UURB_CONSOLE_WEB_PORT:-${saved_console_web_port:-6080}}"
 window_scale="${UURB_WINDOW_SCALE:-${saved_window_scale:-1}}"
+terminal_session_mode="${UURB_TERMINAL_SESSION_MODE:-${saved_terminal_session_mode:-fresh}}"
+if [[ "$terminal_session_mode" != fresh && "$terminal_session_mode" != persistent ]]; then
+    printf 'UURB_TERMINAL_SESSION_MODE must be fresh or persistent.\n' >&2
+    exit 2
+fi
 if [[ ! "$window_scale" =~ ^(1|1\.5|2|3)$ ]]; then
     printf 'UU window scale must be 1, 1.5, 2, or 3.\n' >&2
     exit 2
@@ -515,7 +521,7 @@ install_packages() {
         fonts-noto-cjk git gnome-remote-desktop gnupg iproute2 jq libsecret-tools libx11-6 \
         libxml2-utils libxtst6 meson novnc \
         ninja-build openbox openssl p7zip-full patch python3 python3-attr \
-        python3-gi python3-jinja2 python3-xlib tar tigervnc-viewer websockify \
+        python3-gi python3-jinja2 python3-xlib python3-pil tar tigervnc-viewer websockify \
         x11-utils x11-xserver-utils x11vnc xauth xclip xcompmgr zenity \
         xdotool xvfb zstd
     install_winehq
@@ -664,8 +670,8 @@ PY_MEMORY_BUDGET
 
 # Validate pinned SDK inputs, launcher links and budgets before stopping the bridge.
 "$python_bin" "$repo_dir/scripts/verify-freerdp-input-sdk.py"
-if ! "$python_bin" -c 'import Xlib; import Xlib.display; import Xlib.ext.composite'; then
-    printf 'Missing Python Xlib runtime; install python3-xlib before restarting UU.\n' >&2
+if ! "$python_bin" -c 'import Xlib; import Xlib.display; import Xlib.ext.composite; from PIL import Image'; then
+    printf 'Missing clipboard runtime; install python3-xlib and python3-pil before restarting UU.\n' >&2
     exit 1
 fi
 if [[ "$prefix_only" == false ]]; then
@@ -963,6 +969,7 @@ printf 'UURB_CONSOLE_WEB_PORT=%s\n' \
     "$console_web_port" >>"$environment_tmp"
 printf 'UURB_WINDOW_SCALE=%s\n' "$window_scale" >>"$environment_tmp"
 printf 'UURB_LIBEI_MODE=%s\n' "$libei_mode" >>"$environment_tmp"
+printf 'UURB_TERMINAL_SESSION_MODE=%s\n' "$terminal_session_mode" >>"$environment_tmp"
 chmod 0600 "$environment_tmp"
 mv "$environment_tmp" "$environment_file"
 install -m 0755 "$repo_dir/scripts/uu-remote-bridge" \
@@ -990,6 +997,9 @@ install -m 0755 "$repo_dir/scripts/uu-cursor-asset.py" \
     "$HOME/.local/libexec/uu-cursor-asset.py"
 install -m 0755 "$repo_dir/scripts/uu-quality.py" \
     "$HOME/.local/libexec/uu-quality.py"
+install -m 0755 "$repo_dir/scripts/uu-clipboard-native.py" \
+    "$HOME/.local/libexec/uu-clipboard-native.py"
+install -m 0644 "$repo_dir/VERSION" "$HOME/.local/share/uu-remote/tools/VERSION"
 install -m 0755 "$repo_dir/scripts/uu-desktop-tool.py" \
     "$HOME/.local/libexec/uu-desktop-tool.py"
 install -D -m 0644 "$repo_dir/desktop/uu-tools-fonts.conf" \
