@@ -518,7 +518,7 @@ install_packages() {
         acl aria2 binutils ca-certificates cmake crudini curl \
         gcc \
         gcc-mingw-w64-x86-64 g++-mingw-w64-x86-64 nasm \
-        fonts-noto-cjk git gnome-remote-desktop gnupg iproute2 jq libsecret-tools libx11-6 \
+        fonts-noto-cjk gir1.2-gtk-3.0 git gnome-remote-desktop gnupg iproute2 jq libsecret-tools libx11-6 \
         libxml2-utils libxtst6 meson novnc \
         ninja-build openbox openssl p7zip-full patch python3 python3-attr \
         python3-gi python3-jinja2 python3-xlib python3-pil tar tigervnc-viewer websockify \
@@ -670,8 +670,8 @@ PY_MEMORY_BUDGET
 
 # Validate pinned SDK inputs, launcher links and budgets before stopping the bridge.
 "$python_bin" "$repo_dir/scripts/verify-freerdp-input-sdk.py"
-if ! "$python_bin" -c 'import Xlib; import Xlib.display; import Xlib.ext.composite; from PIL import Image'; then
-    printf 'Missing clipboard runtime; install python3-xlib and python3-pil before restarting UU.\n' >&2
+if ! "$python_bin" -c 'import Xlib; import Xlib.display; import Xlib.ext.composite; from PIL import Image; import gi; gi.require_version("Gtk", "3.0"); from gi.repository import Gtk'; then
+    printf 'Missing clipboard runtime; install python3-xlib, python3-pil, python3-gi and gir1.2-gtk-3.0 before restarting UU.\n' >&2
     exit 1
 fi
 if [[ "$prefix_only" == false ]]; then

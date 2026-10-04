@@ -87,7 +87,7 @@ def main():
             launch(["/usr/bin/python3", str(ROOT / "scripts/uu-clipboard-native.py"),
                     "--ready-file", str(ready), "--staging", str(lab / "staging"),
                     "--status-file", str(status)],
-                   dict(host, UURB_X11_CLIPBOARD_TOKEN=token))
+                   dict(host, UURB_X11_CLIPBOARD_TOKEN=token, UURB_CLIPBOARD_PROGRESS="0"))
             wait_for(ready.exists)
             adapter = launch([WINE, str(companion)], dict(windows,
                 UURB_X11_CLIPBOARD_PORT=ready.read_text().strip(),
@@ -154,6 +154,20 @@ def main():
             launch([WINE, str(fixture), "virtual"], windows)
             wait_for(lambda: state().get("staged_path", "").endswith("virtual.txt"))
             assert Path(state()["staged_path"]).read_bytes() == b"virtual-file\0\xff\n"
+            second = lab / "second.bin"
+            second.write_bytes(b"multi-file-data\0\xff" * 8192)
+            previous_at = state()["timestamp"]
+            launch([WINE, str(fixture), "drop", "Z:" + str(source), "Z:" + str(second)], windows)
+            wait_for(lambda: state().get("timestamp", 0) > previous_at and state().get("file_count") == 2)
+            assert [Path(p).read_bytes() for p in state()["staged_paths"]] == [content, second.read_bytes()]
+            uris = subprocess.check_output(["xclip", "-selection", "clipboard", "-out", "-target",
+                                            "text/uri-list"], env=host, timeout=5).decode().splitlines()
+            assert uris == [Path(p).as_uri() for p in state()["staged_paths"]]
+            previous_at = state()["timestamp"]
+            launch([WINE, str(fixture), "virtual-multiple"], windows)
+            wait_for(lambda: state().get("timestamp", 0) > previous_at and
+                     state().get("files", [{}])[-1].get("name") == "unknown-size.txt")
+            assert [Path(p).read_bytes() for p in state()["staged_paths"]] == [b"virtual-file\0\xff\n"] * 2
             adapter.terminate()
             adapter.wait(timeout=5)
             client = socket.create_connection(("127.0.0.1", int(ready.read_text())), timeout=5)
@@ -195,6 +209,48 @@ def main():
             client.close()
             time.sleep(0.15)
             assert len(list((lab / "staging").glob("*"))) == count
+            client = socket.create_connection(("127.0.0.1", int(ready.read_text())), timeout=5)
+            client.sendall(struct.pack("<II", MAGIC, 1) + token.encode())
+            assert struct.unpack("<IIII", exact(client, 16))[2:] == (1, 0)
+            progress = lab / "clipboard-transfer.json"
+            def manifest(entries):
+                return struct.pack("<I", len(entries)) + b"".join(
+                    struct.pack("<Iq", len(name.encode()), size) + name.encode() for name, size in entries)
+            chunk = b"real bytes" * 4096
+            begin = manifest([("same.bin", len(chunk) * 2), ("same.bin", -1)])
+            assert request(6, begin) == (len(begin), 0)
+            old_uris = subprocess.check_output(["xclip", "-selection", "clipboard", "-out", "-target",
+                                               "text/uri-list"], env=host, timeout=5)
+            time.sleep(0.12)
+            assert request(7, struct.pack("<I", 0) + chunk)[1] == 0
+            p = json.loads(progress.read_text())
+            assert p["received"] == p["bytes_received"] == len(chunk) and p["percent"] == 50
+            assert p["bytes_total"] is None and p["total_percent"] is None
+            assert subprocess.check_output(["xclip", "-selection", "clipboard", "-out", "-target",
+                                            "text/uri-list"], env=host, timeout=5) == old_uris
+            assert request(7, struct.pack("<I", 0) + chunk)[1] == 0
+            assert request(8, struct.pack("<I", 0))[1] == 0
+            p = json.loads(progress.read_text())
+            assert p["file_index"] == 2 and p["file_count"] == 2 and p["total"] is None
+            assert request(7, struct.pack("<I", 1) + b"done")[1] == 0
+            assert request(8, struct.pack("<I", 1))[1] == 0
+            p = json.loads(progress.read_text())
+            assert p["state"] == "completed" and p["bytes_received"] == p["bytes_total"] == len(chunk) * 2 + 4
+            paths = [Path(p) for p in state()["staged_paths"]]
+            assert paths[0].read_bytes() == chunk * 2 and paths[1].read_bytes() == b"done"
+            assert paths[0].name == "same.bin" and paths[1].name == "same (2).bin"
+            before = set((lab / "staging").iterdir())
+            begin = manifest([("partial.bin", 100)])
+            assert request(6, begin)[1] == 0
+            assert request(7, struct.pack("<I", 0) + b"short")[1] == 0
+            client.close()
+            wait_for(lambda: json.loads(progress.read_text()).get("state") == "failed")
+            assert set((lab / "staging").iterdir()) == before
+            client = socket.create_connection(("127.0.0.1", int(ready.read_text())), timeout=5)
+            client.sendall(struct.pack("<II", MAGIC, 1) + token.encode())
+            assert struct.unpack("<IIII", exact(client, 16))[2:] == (1, 0)
+            assert request(6, manifest([("large.bin", 64 * 1024 * 1024 + 1)]))[1] != 0
+            assert json.loads(progress.read_text())["state"] == "failed"
             print(json.dumps({"bitmap_wine_to_native_pixels": "PASS",
                               "bitmap_native_to_wine_different_pixels": "PASS",
                               "text_unicode_multiline_each_direction": "PASS",
@@ -205,6 +261,12 @@ def main():
                               "URI_list_published": "PASS", "same_image_after_external_text": "PASS",
                               "path_traversal_rejected": "PASS", "duplicate_name_no_overwrite": "PASS",
                               "partial_transfer_no_publish": "PASS",
+                              "multiple_HDROP_and_OLE_files_exact_bytes": "PASS",
+                              "multiple_file_URI_publication_after_completion": "PASS",
+                              "real_byte_counters_and_unknown_total": "PASS",
+                              "duplicate_names_within_batch_no_overwrite": "PASS",
+                              "stream_disconnect_cleanup_and_failure_state": "PASS",
+                              "file_size_limit_failure_visible": "PASS",
                               "file_sha256": hashlib.sha256(content).hexdigest(),
                               "real_controller_tested": False}, indent=2))
         except BaseException:

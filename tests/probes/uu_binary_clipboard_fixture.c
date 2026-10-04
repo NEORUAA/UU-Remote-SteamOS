@@ -8,6 +8,7 @@
 
 static const char content[] = "virtual-file\0\xff\n";
 static ULONG refs = 1;
+static BOOL multiple_virtual;
 static HRESULT STDMETHODCALLTYPE query(IDataObject *self, REFIID iid, void **out)
 {
     if (IsEqualIID(iid, &IID_IUnknown) || IsEqualIID(iid, &IID_IDataObject)) {
@@ -24,17 +25,21 @@ static HRESULT STDMETHODCALLTYPE getdata(IDataObject *self, FORMATETC *f, STGMED
     if (f->cfFormat == RegisterClipboardFormatW(L"FileGroupDescriptorW")) {
         FILEGROUPDESCRIPTORW *g;
         m->tymed = TYMED_HGLOBAL;
-        m->hGlobal = GlobalAlloc(GMEM_MOVEABLE | GMEM_ZEROINIT, sizeof(*g));
+        m->hGlobal = GlobalAlloc(GMEM_MOVEABLE | GMEM_ZEROINIT,
+            sizeof(*g) + (multiple_virtual ? sizeof(FILEDESCRIPTORW) : 0));
         g = GlobalLock(m->hGlobal);
         if (!g) return E_OUTOFMEMORY;
-        g->cItems = 1;
+        g->cItems = multiple_virtual ? 2 : 1;
         g->fgd[0].dwFlags = FD_FILESIZE;
         g->fgd[0].nFileSizeLow = sizeof(content) - 1;
         wcscpy(g->fgd[0].cFileName, L"virtual.txt");
+        if (multiple_virtual)
+            wcscpy(g->fgd[1].cFileName, L"unknown-size.txt");
         GlobalUnlock(m->hGlobal);
         return S_OK;
     }
-    if (f->cfFormat == RegisterClipboardFormatW(L"FileContents") && f->lindex == 0) {
+    if (f->cfFormat == RegisterClipboardFormatW(L"FileContents") &&
+        (f->lindex == 0 || (multiple_virtual && f->lindex == 1))) {
         LARGE_INTEGER beginning = { .QuadPart = 0 };
         ULONG written;
         m->tymed = TYMED_ISTREAM;
@@ -97,18 +102,26 @@ int wmain(int argc, wchar_t **argv)
         WriteFile(file, bytes, (DWORD)GlobalSize(data), &written, NULL);
         CloseHandle(file); GlobalUnlock(data); CloseClipboard(); return 0;
     }
-    if (wcscmp(argv[1], L"virtual") == 0) {
+    if (wcscmp(argv[1], L"virtual") == 0 || wcscmp(argv[1], L"virtual-multiple") == 0) {
+        multiple_virtual = wcscmp(argv[1], L"virtual-multiple") == 0;
         if (FAILED(OleSetClipboard(&object))) return 6;
     } else {
         HGLOBAL allocation;
         if (!OpenClipboard(window) || !EmptyClipboard()) return 7;
-        if (wcscmp(argv[1], L"drop") == 0 && argc == 3) {
+        if (wcscmp(argv[1], L"drop") == 0 && argc >= 3) {
             DROPFILES *drop;
-            SIZE_T length = (wcslen(argv[2]) + 2) * sizeof(wchar_t);
+            SIZE_T length = sizeof(wchar_t);
+            wchar_t *position;
+            for (int index = 2; index < argc; index++)
+                length += (wcslen(argv[index]) + 1) * sizeof(wchar_t);
             allocation = GlobalAlloc(GMEM_MOVEABLE | GMEM_ZEROINIT, sizeof(*drop) + length);
             drop = GlobalLock(allocation);
             drop->pFiles = sizeof(*drop); drop->fWide = TRUE;
-            wcscpy((wchar_t *)((char *)drop + sizeof(*drop)), argv[2]);
+            position = (wchar_t *)((char *)drop + sizeof(*drop));
+            for (int index = 2; index < argc; index++) {
+                wcscpy(position, argv[index]);
+                position += wcslen(position) + 1;
+            }
             GlobalUnlock(allocation);
             SetClipboardData(CF_HDROP, allocation);
         } else if (wcscmp(argv[1], L"text") == 0) {

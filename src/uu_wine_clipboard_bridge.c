@@ -44,155 +44,11 @@ static BOOL copy_global(HGLOBAL handle, char **output, DWORD *size)
     return *output != NULL;
 }
 
-static BOOL file_header(const wchar_t *name, char **packet, DWORD *length)
-{
-    int bytes = WideCharToMultiByte(CP_UTF8, WC_ERR_INVALID_CHARS, name, -1,
-                                   NULL, 0, NULL, NULL);
-    DWORD name_bytes;
-
-    if (bytes <= 1 || bytes > 1024)
-        return FALSE;
-    name_bytes = (DWORD)bytes - 1;
-    *packet = HeapAlloc(GetProcessHeap(), 0, 4 + (DWORD)bytes);
-    if (!*packet)
-        return FALSE;
-    memcpy(*packet, &name_bytes, 4);
-    WideCharToMultiByte(CP_UTF8, WC_ERR_INVALID_CHARS, name, -1,
-                        *packet + 4, bytes, NULL, NULL);
-    *length = name_bytes + 4;
-    return TRUE;
-}
-
-static BOOL append_file(char **packet, DWORD *length, const void *data, DWORD size)
-{
-    char *next;
-
-    if (size > UURB_CLIPBOARD_MAX_BINARY - *length)
-        return FALSE;
-    next = HeapReAlloc(GetProcessHeap(), 0, *packet, (SIZE_T)*length + size);
-    if (!next)
-        return FALSE;
-    if (size)
-        memcpy(next + *length, data, size);
-    *packet = next;
-    *length += size;
-    return TRUE;
-}
-
-static BOOL read_drop_file(const wchar_t *path, DWORD sequence,
-                           char **packet, DWORD *size)
-{
-    const wchar_t *name = wcsrchr(path, L'\\');
-    const wchar_t *slash = wcsrchr(path, L'/');
-    HANDLE file;
-    LARGE_INTEGER length;
-    char block[65536];
-    DWORD received;
-    BOOL result = FALSE;
-
-    name = name ? name + 1 : path;
-    if (slash && slash + 1 > name)
-        name = slash + 1;
-    if (!file_header(name, packet, size))
-        return FALSE;
-    file = CreateFileW(path, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING,
-                       FILE_ATTRIBUTE_NORMAL, NULL);
-    if (file == INVALID_HANDLE_VALUE)
-        return FALSE;
-    if (!GetFileSizeEx(file, &length) || length.QuadPart < 0 ||
-        (ULONGLONG)length.QuadPart > UURB_CLIPBOARD_MAX_BINARY - *size)
-        goto done;
-    for (;;) {
-        if (GetClipboardSequenceNumber() != sequence ||
-            !ReadFile(file, block, sizeof(block), &received, NULL))
-            goto done;
-        if (received == 0)
-            break;
-        if (!append_file(packet, size, block, received))
-            goto done;
-    }
-    result = TRUE;
-done:
-    CloseHandle(file);
-    return result;
-}
-
-static BOOL read_virtual_file(DWORD sequence, char **packet, DWORD *size)
-{
-    IDataObject *object = NULL;
-    FORMATETC format;
-    STGMEDIUM medium;
-    FILEGROUPDESCRIPTORW *group;
-    wchar_t name[MAX_PATH];
-    BOOL result = FALSE;
-
-    if (!get_ole_clipboard || !release_medium ||
-        FAILED(get_ole_clipboard(&object)))
-        return FALSE;
-    ZeroMemory(&format, sizeof(format));
-    format.cfFormat = (CLIPFORMAT)RegisterClipboardFormatW(L"FileGroupDescriptorW");
-    format.dwAspect = DVASPECT_CONTENT;
-    format.lindex = -1;
-    format.tymed = TYMED_HGLOBAL;
-    if (FAILED(IDataObject_GetData(object, &format, &medium)))
-        goto done;
-    group = GlobalLock(medium.hGlobal);
-    if (!group || GlobalSize(medium.hGlobal) < sizeof(FILEGROUPDESCRIPTORW) ||
-        group->cItems != 1 ||
-        (group->fgd[0].dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) ||
-        wcsnlen(group->fgd[0].cFileName, MAX_PATH) == MAX_PATH) {
-        if (group)
-            GlobalUnlock(medium.hGlobal);
-        release_medium(&medium);
-        goto done;
-    }
-    wcscpy(name, group->fgd[0].cFileName);
-    GlobalUnlock(medium.hGlobal);
-    release_medium(&medium);
-    if (!file_header(name, packet, size))
-        goto done;
-    format.cfFormat = (CLIPFORMAT)RegisterClipboardFormatW(L"FileContents");
-    format.lindex = 0;
-    format.tymed = TYMED_ISTREAM | TYMED_HGLOBAL;
-    if (FAILED(IDataObject_GetData(object, &format, &medium)))
-        goto done;
-    if (medium.tymed == TYMED_ISTREAM) {
-        char block[65536];
-        ULONG received;
-        HRESULT status;
-
-        result = TRUE;
-        do {
-            received = 0;
-            status = IStream_Read(medium.pstm, block, sizeof(block), &received);
-            if (FAILED(status) || GetClipboardSequenceNumber() != sequence ||
-                !append_file(packet, size, block, received)) {
-                result = FALSE;
-                break;
-            }
-        } while (received != 0 && status == S_OK);
-    } else if (medium.tymed == TYMED_HGLOBAL) {
-        SIZE_T bytes = GlobalSize(medium.hGlobal);
-        void *data = GlobalLock(medium.hGlobal);
-
-        if (bytes <= UURB_CLIPBOARD_MAX_BINARY && (data || bytes == 0))
-            result = append_file(packet, size, data, (DWORD)bytes);
-        if (data)
-            GlobalUnlock(medium.hGlobal);
-    }
-    release_medium(&medium);
-done:
-    IDataObject_Release(object);
-    return result;
-}
-
 static BOOL read_clipboard_binary(DWORD sequence, char **output,
                                  DWORD *size, DWORD *kind)
 {
     UINT png = RegisterClipboardFormatW(L"PNG");
     UINT format = 0;
-    wchar_t path[32768];
-    BOOL virtual_file = FALSE;
     BOOL result = FALSE;
 
     if (!OpenClipboard(NULL))
@@ -217,26 +73,8 @@ static BOOL read_clipboard_binary(DWORD sequence, char **output,
     }
     if (format)
         result = copy_global(GetClipboardData(format), output, size);
-    else if (IsClipboardFormatAvailable(CF_HDROP)) {
-        HDROP drop = (HDROP)GetClipboardData(CF_HDROP);
-        if (drop && DragQueryFileW(drop, 0xFFFFFFFF, NULL, 0) == 1 &&
-            DragQueryFileW(drop, 0, path, ARRAYSIZE(path)) != 0) {
-            CloseClipboard();
-            *kind = UURB_CLIPBOARD_FILE;
-            result = read_drop_file(path, sequence, output, size);
-            goto checked;
-        }
-    } else {
-        virtual_file = IsClipboardFormatAvailable(
-            RegisterClipboardFormatW(L"FileGroupDescriptorW"));
-    }
 closed:
     CloseClipboard();
-    if (virtual_file) {
-        *kind = UURB_CLIPBOARD_FILE;
-        result = read_virtual_file(sequence, output, size);
-    }
-checked:
     return result && GetClipboardSequenceNumber() == sequence && owner_is_gameviewer();
 }
 
@@ -327,6 +165,7 @@ static BOOL connect_clipboard_listener(void)
     uurb_x11_clipboard_handshake handshake;
     uurb_x11_clipboard_response response;
     DWORD timeout_ms = 1000;
+    BOOL no_delay = TRUE;
     WSADATA data;
 
     if (clipboard_socket != INVALID_SOCKET)
@@ -339,6 +178,8 @@ static BOOL connect_clipboard_listener(void)
     clipboard_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (clipboard_socket == INVALID_SOCKET)
         return FALSE;
+    setsockopt(clipboard_socket, IPPROTO_TCP, TCP_NODELAY,
+               (const char *)&no_delay, sizeof(no_delay));
     setsockopt(clipboard_socket, SOL_SOCKET, SO_SNDTIMEO,
                (const char *)&timeout_ms, sizeof(timeout_ms));
     setsockopt(clipboard_socket, SOL_SOCKET, SO_RCVTIMEO,
@@ -398,6 +239,302 @@ static BOOL owner_is_gameviewer(void)
     if (slash_basename)
         basename = slash_basename + 1;
     return lstrcmpiW(basename, L"GameViewer.exe") == 0;
+}
+
+typedef struct clipboard_file {
+    wchar_t name[MAX_PATH];
+    wchar_t *path;
+    ULONGLONG size;
+    BOOL known;
+} clipboard_file;
+
+static BOOL send_clipboard_packet(DWORD sequence, DWORD kind,
+                                  const void *data, DWORD size)
+{
+    uurb_x11_clipboard_request request = {
+        UURB_X11_CLIPBOARD_MAGIC, sequence, size, kind};
+    uurb_x11_clipboard_response response;
+
+    if (!connect_clipboard_listener())
+        return FALSE;
+    if (!socket_write_all(clipboard_socket, &request, sizeof(request)) ||
+        !socket_write_all(clipboard_socket, data, (int)size) ||
+        !socket_read_all(clipboard_socket, &response, sizeof(response)) ||
+        response.magic != UURB_X11_CLIPBOARD_MAGIC ||
+        response.sequence != sequence || response.result != size || response.error) {
+        close_clipboard_socket();
+        return FALSE;
+    }
+    return TRUE;
+}
+
+static BOOL send_file_block(DWORD sequence, DWORD index, const void *data,
+                            DWORD size, ULONGLONG *received, ULONGLONG *batch)
+{
+    char packet[sizeof(DWORD) + UURB_CLIPBOARD_FILE_BLOCK];
+
+    if (GetClipboardSequenceNumber() != sequence || !owner_is_gameviewer() ||
+        *received + size > UURB_CLIPBOARD_MAX_BINARY ||
+        *batch + size > UURB_CLIPBOARD_MAX_BATCH)
+        return FALSE;
+    memcpy(packet, &index, sizeof(index));
+    memcpy(packet + sizeof(index), data, size);
+    if (!send_clipboard_packet(sequence, UURB_CLIPBOARD_FILE_CHUNK,
+                              packet, sizeof(index) + size))
+        return FALSE;
+    *received += size;
+    *batch += size;
+    return TRUE;
+}
+
+static BOOL stream_drop_file(const clipboard_file *entry, DWORD sequence,
+                             DWORD index, ULONGLONG *batch)
+{
+    HANDLE file = CreateFileW(entry->path, GENERIC_READ, FILE_SHARE_READ, NULL,
+                              OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+    char block[UURB_CLIPBOARD_FILE_BLOCK];
+    DWORD size;
+    ULONGLONG received = 0;
+    BOOL result = FALSE;
+
+    if (file == INVALID_HANDLE_VALUE)
+        return FALSE;
+    for (;;) {
+        if (GetClipboardSequenceNumber() != sequence ||
+            !ReadFile(file, block, sizeof(block), &size, NULL))
+            break;
+        if (!size) {
+            result = !entry->known || received == entry->size;
+            break;
+        }
+        if (!send_file_block(sequence, index, block, size, &received, batch))
+            break;
+    }
+    CloseHandle(file);
+    return result;
+}
+
+static BOOL stream_virtual_file(IDataObject *object, DWORD sequence,
+                                DWORD index, ULONGLONG *batch)
+{
+    FORMATETC format;
+    STGMEDIUM medium;
+    ULONGLONG received = 0;
+    BOOL result = FALSE;
+
+    ZeroMemory(&format, sizeof(format));
+    format.cfFormat = (CLIPFORMAT)RegisterClipboardFormatW(L"FileContents");
+    format.dwAspect = DVASPECT_CONTENT;
+    format.lindex = (LONG)index;
+    format.tymed = TYMED_ISTREAM | TYMED_HGLOBAL;
+    if (FAILED(IDataObject_GetData(object, &format, &medium)))
+        return FALSE;
+    if (medium.tymed == TYMED_ISTREAM) {
+        char block[UURB_CLIPBOARD_FILE_BLOCK];
+        HRESULT status;
+        ULONG size;
+
+        for (;;) {
+            size = 0;
+            status = IStream_Read(medium.pstm, block, sizeof(block), &size);
+            if (FAILED(status) || GetClipboardSequenceNumber() != sequence)
+                break;
+            if (size && !send_file_block(sequence, index, block, size, &received, batch))
+                break;
+            if (!size || status == S_FALSE) {
+                result = TRUE;
+                break;
+            }
+        }
+    } else if (medium.tymed == TYMED_HGLOBAL) {
+        SIZE_T size = GlobalSize(medium.hGlobal);
+        char *data = GlobalLock(medium.hGlobal);
+
+        if (size <= UURB_CLIPBOARD_MAX_BINARY && (data || !size)) {
+            result = TRUE;
+            for (DWORD offset = 0; offset < size;) {
+                DWORD block = (DWORD)(size - offset);
+                if (block > UURB_CLIPBOARD_FILE_BLOCK)
+                    block = UURB_CLIPBOARD_FILE_BLOCK;
+                if (!send_file_block(sequence, index, data + offset, block, &received, batch)) {
+                    result = FALSE;
+                    break;
+                }
+                offset += block;
+            }
+        }
+        if (data)
+            GlobalUnlock(medium.hGlobal);
+    }
+    release_medium(&medium);
+    return result;
+}
+
+/* Return zero only when this is not a file offer. Consume failed file offers
+ * too, so a rejected batch neither becomes filename text nor retries forever. */
+static int forward_clipboard_files(DWORD sequence)
+{
+    clipboard_file *files = NULL;
+    IDataObject *object = NULL;
+    DWORD count = 0, index, length = sizeof(DWORD);
+    ULONGLONG batch = 0;
+    char *manifest = NULL;
+    BOOL offered = FALSE, drop_offer = FALSE, success = FALSE;
+    const char *failure = "File transfer failed or source copy changed";
+
+    if (!OpenClipboard(NULL))
+        return 0;
+    if (GetClipboardSequenceNumber() != sequence || !owner_is_gameviewer()) {
+        CloseClipboard();
+        return 0;
+    }
+    drop_offer = IsClipboardFormatAvailable(CF_HDROP);
+    offered = drop_offer || IsClipboardFormatAvailable(
+        RegisterClipboardFormatW(L"FileGroupDescriptorW"));
+    if (!offered) {
+        CloseClipboard();
+        return 0;
+    }
+    files = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY,
+                      UURB_CLIPBOARD_MAX_FILES * sizeof(*files));
+    if (!files) {
+        CloseClipboard();
+        goto done;
+    }
+    if (drop_offer) {
+        HDROP drop = (HDROP)GetClipboardData(CF_HDROP);
+        count = drop ? DragQueryFileW(drop, 0xFFFFFFFF, NULL, 0) : 0;
+        if (!count || count > UURB_CLIPBOARD_MAX_FILES) {
+            failure = "A copy supports 1 to 64 files";
+            CloseClipboard();
+            goto done;
+        }
+        for (index = 0; index < count; index++) {
+            UINT units = DragQueryFileW(drop, index, NULL, 0);
+            const wchar_t *name, *slash;
+            WIN32_FILE_ATTRIBUTE_DATA attributes;
+
+            if (!units || units > 32767) {
+                CloseClipboard();
+                goto done;
+            }
+            files[index].path = HeapAlloc(GetProcessHeap(), 0, (units + 1) * sizeof(wchar_t));
+            if (!files[index].path || !DragQueryFileW(drop, index, files[index].path, units + 1)) {
+                CloseClipboard();
+                goto done;
+            }
+            name = wcsrchr(files[index].path, L'\\');
+            name = name ? name + 1 : files[index].path;
+            slash = wcsrchr(files[index].path, L'/');
+            if (slash && slash + 1 > name)
+                name = slash + 1;
+            if (wcslen(name) >= MAX_PATH ||
+                !GetFileAttributesExW(files[index].path, GetFileExInfoStandard, &attributes) ||
+                (attributes.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
+                failure = "Folders are not supported; copy individual files";
+                CloseClipboard();
+                goto done;
+            }
+            wcscpy(files[index].name, name);
+            files[index].known = TRUE;
+            files[index].size = ((ULONGLONG)attributes.nFileSizeHigh << 32) | attributes.nFileSizeLow;
+        }
+        CloseClipboard();
+    } else {
+        FORMATETC format;
+        STGMEDIUM medium;
+        FILEGROUPDESCRIPTORW *group;
+        CloseClipboard();
+        if (!get_ole_clipboard || !release_medium || FAILED(get_ole_clipboard(&object)))
+            goto done;
+        ZeroMemory(&format, sizeof(format));
+        format.cfFormat = (CLIPFORMAT)RegisterClipboardFormatW(L"FileGroupDescriptorW");
+        format.dwAspect = DVASPECT_CONTENT;
+        format.lindex = -1;
+        format.tymed = TYMED_HGLOBAL;
+        if (FAILED(IDataObject_GetData(object, &format, &medium)))
+            goto done;
+        group = GlobalLock(medium.hGlobal);
+        if (group && GlobalSize(medium.hGlobal) >= sizeof(UINT))
+            count = group->cItems;
+        if (!group || !count || count > UURB_CLIPBOARD_MAX_FILES ||
+            GlobalSize(medium.hGlobal) < sizeof(UINT) + (SIZE_T)count * sizeof(FILEDESCRIPTORW)) {
+            if (group)
+                GlobalUnlock(medium.hGlobal);
+            release_medium(&medium);
+            count = 0;
+            failure = "Invalid file descriptors; a copy supports up to 64 files";
+            goto done;
+        }
+        for (index = 0; index < count; index++) {
+            FILEDESCRIPTORW *entry = &group->fgd[index];
+            if ((entry->dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) ||
+                wcsnlen(entry->cFileName, MAX_PATH) == MAX_PATH)
+                break;
+            wcscpy(files[index].name, entry->cFileName);
+            files[index].known = (entry->dwFlags & FD_FILESIZE) != 0;
+            files[index].size = ((ULONGLONG)entry->nFileSizeHigh << 32) | entry->nFileSizeLow;
+        }
+        GlobalUnlock(medium.hGlobal);
+        release_medium(&medium);
+        if (index != count)
+            goto done;
+    }
+    manifest = HeapAlloc(GetProcessHeap(), 0, 4 + count * (12 + 256));
+    if (!manifest)
+        goto done;
+    memcpy(manifest, &count, 4);
+    for (index = 0; index < count; index++) {
+        int bytes = WideCharToMultiByte(CP_UTF8, WC_ERR_INVALID_CHARS,
+            files[index].name, -1, NULL, 0, NULL, NULL);
+        DWORD name_bytes;
+        LONGLONG size = files[index].known ? (LONGLONG)files[index].size : -1;
+        if (bytes <= 1 || bytes > 256) {
+            failure = "Invalid filename or basename exceeds 255 UTF-8 bytes";
+            goto done;
+        }
+        if (files[index].known) {
+            batch += files[index].size;
+            if (files[index].size > UURB_CLIPBOARD_MAX_BINARY || batch > UURB_CLIPBOARD_MAX_BATCH) {
+                failure = "Each file is limited to 64 MiB; a copy to 256 MiB";
+                goto done;
+            }
+        }
+        name_bytes = (DWORD)bytes - 1;
+        memcpy(manifest + length, &name_bytes, 4);
+        memcpy(manifest + length + 4, &size, 8);
+        WideCharToMultiByte(CP_UTF8, WC_ERR_INVALID_CHARS, files[index].name, -1,
+                            manifest + length + 12, bytes, NULL, NULL);
+        length += 12 + name_bytes;
+    }
+    if (GetClipboardSequenceNumber() != sequence || !owner_is_gameviewer() ||
+        !send_clipboard_packet(sequence, UURB_CLIPBOARD_FILE_BEGIN, manifest, length))
+        goto done;
+    batch = 0;
+    for (index = 0; index < count; index++) {
+        if (!(drop_offer ? stream_drop_file(&files[index], sequence, index, &batch) :
+                         stream_virtual_file(object, sequence, index, &batch)) ||
+            GetClipboardSequenceNumber() != sequence || !owner_is_gameviewer() ||
+            !send_clipboard_packet(sequence, UURB_CLIPBOARD_FILE_END, &index, sizeof(index)))
+            goto done;
+    }
+    success = TRUE;
+done:
+    if (!success) {
+        send_clipboard_packet(sequence, UURB_CLIPBOARD_FILE_ABORT, failure, (DWORD)strlen(failure));
+        report_clipboard_failure("file-transfer");
+    }
+    if (object)
+        IDataObject_Release(object);
+    if (files) {
+        for (index = 0; index < count && index < UURB_CLIPBOARD_MAX_FILES; index++)
+            if (files[index].path)
+                HeapFree(GetProcessHeap(), 0, files[index].path);
+        HeapFree(GetProcessHeap(), 0, files);
+    }
+    if (manifest)
+        HeapFree(GetProcessHeap(), 0, manifest);
+    return 1;
 }
 
 static BOOL read_clipboard_utf8(DWORD expected_sequence, char **output,
@@ -513,12 +650,13 @@ static BOOL read_clipboard_utf8(DWORD expected_sequence, char **output,
 
 static BOOL forward_current_clipboard(DWORD sequence)
 {
-    uurb_x11_clipboard_request request;
-    uurb_x11_clipboard_response response;
     char *text = NULL;
     DWORD text_size;
     DWORD kind = 0;
     BOOL sent = FALSE;
+
+    if (extended_clipboard && forward_clipboard_files(sequence))
+        return TRUE;
 
     if (!extended_clipboard || !read_clipboard_binary(sequence, &text, &text_size, &kind)) {
         if (text)
@@ -528,27 +666,9 @@ static BOOL forward_current_clipboard(DWORD sequence)
         if (!read_clipboard_utf8(sequence, &text, &text_size))
             return FALSE;
     }
-    if (!connect_clipboard_listener()) {
-        report_clipboard_failure("connect");
-        goto cleanup;
-    }
-    request.magic = UURB_X11_CLIPBOARD_MAGIC;
-    request.sequence = sequence;
-    request.text_bytes = text_size;
-    request.reserved = kind;
-    if (!socket_write_all(clipboard_socket, &request, sizeof(request)) ||
-        !socket_write_all(clipboard_socket, text, (int)text_size) ||
-        !socket_read_all(clipboard_socket, &response, sizeof(response)) ||
-        response.magic != UURB_X11_CLIPBOARD_MAGIC ||
-        response.sequence != sequence || response.result != text_size ||
-        response.error != 0) {
+    sent = send_clipboard_packet(sequence, kind, text, text_size);
+    if (!sent)
         report_clipboard_failure("native-owner");
-        close_clipboard_socket();
-        goto cleanup;
-    }
-    sent = TRUE;
-
-cleanup:
     HeapFree(GetProcessHeap(), 0, text);
     return sent;
 }

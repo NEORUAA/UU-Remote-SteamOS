@@ -1,7 +1,7 @@
 # UU Remote Ubuntu Plus 0.2.0-work
 
 This working version adds native terminal session persistence, bidirectional
-bitmap clipboard, and incoming single-file clipboard to the existing Plus
+bitmap clipboard, and incoming multi-file clipboard to the existing Plus
 bridge. It retains the legacy input route, RDP desktop relay, four resolution
 choices ending at 4K, Wine 11.0 and the audited UU 4.42 runtime.
 
@@ -27,17 +27,29 @@ enabled.
 Bitmap reads retain the owner's DIB publication order: a synthesized Wine V5
 cache must not take priority over a newly rendered original DIB.
 
-Incoming files support exactly one CF_HDROP file or one OLE
-FileGroupDescriptorW with FileContents supplied as IStream or HGlobal. A
-complete file is staged in `~/.local/share/uu-remote/clipboard-files/copy-*/`;
-only then are `text/uri-list` and GNOME's copied-file format published. A new
-directory for each copy prevents duplicate names from overwriting prior files.
+Incoming files support CF_HDROP and OLE FileGroupDescriptorW lists, with
+FileContents supplied as IStream or HGlobal. Files are received in 64 KiB
+chunks into `~/.local/share/uu-remote/clipboard-files/copy-*/`; only after the
+entire batch is complete are `text/uri-list` and GNOME's copied-file format
+published. A new directory for each copy prevents overwriting prior files;
+duplicate names within a batch receive a numeric suffix.
 Users can paste the file into a file manager. Staged files remain until manually
 removed; remove them after pasting or when those clipboard references are no
-longer needed. Directory copies, multiple files and outgoing file transfer are
-not implemented. Payloads are limited to 64 MiB and images to 16 million pixels.
+longer needed. Directory copies and outgoing file transfer are not implemented.
+Each file is limited to 64 MiB, with up to 64 files and 256 MiB per copy. Images
+remain limited to 16 million pixels.
 
-The helper requires system Python with python3-xlib and python3-pil. Upgrade and
+A non-focusing **UU 文件接收** window shows the current filename and i/N,
+actual received/total bytes and percentages for the file and batch. Unknown
+totals stay indeterminate. Completion is displayed for five seconds; failure
+remains visible until dismissed. Interrupted copies remove the entire unfinished
+batch and leave the prior clipboard available. Counters measure bytes received
+by this bridge; UU's earlier fetching of a delayed file does not expose a byte
+count. Local progress metadata is saved in
+`~/.local/state/uu-remote-bridge/clipboard-transfer.json`.
+
+The helper requires system Python with python3-xlib, python3-pil, python3-gi and
+gir1.2-gtk-3.0. Upgrade and
 rollback snapshots include the helper. Clipboard metadata in
 `~/.local/state/uu-remote-bridge/clipboard-status.json` records direction,
 dimensions or file size and hashes; it does not record text or image contents.
@@ -61,20 +73,21 @@ normal source-build reuse path; this is not a new cold build.
 
 On the current host, terminal reattachment and an incoming single file passed
 their acceptance checks. A distinct 43×29 Ubuntu image also reached the Mac
-with identical RGB pixels. **Mac-to-Ubuntu bitmap acceptance is still failing.**
-An earlier 35×21 Mac image was recovered from the Windows owner's original
-DIB, while Wine's synthesized DIBV5 and bitmap still held the previous image.
-The companion now reads the original DIB first. In the subsequent live session,
-however, a new 37×23 Mac source never appeared in the Windows clipboard, even
-after reconnection and paste. Enabling only Wine-to-GNOME RDP clipboard traffic
-did not produce a new image offer, so that experiment was rolled back.
+with identical RGB pixels. Ordinary PNG-only Mac copies did not produce a
+Windows image offer. A distinct Mac TIFF-only 47×31 image then reached Ubuntu
+and an actual Wayland GTK consumer with identical RGB pixels. A second 53×37
+Mac source advertised TIFF first alongside its original PNG; Ubuntu again
+received identical RGB pixels. The original PNG need not be removed.
 
-The remaining boundary is the controller-to-UU/Wine image offer and its delayed
-data request. It requires a fresh GameViewer-owned format and source pixels
-before the native reader can import them. This observation does not establish
-an official UU platform limitation. Do not force rendering against an Explorer
-or SDL clipboard owner, replay the old image as a successful incoming copy, or
-claim the CPU/GPU prototypes complete while this baseline remains unaccepted.
+The [optional Mac compatibility helper](../macos-clipboard-compat.md) preserves
+pure PNG bytes and adds TIFF automatically, with an enable/disable menu switch.
+It has compiled on the actual Mac; its ordinary Preview-copy path is pending
+GUI acceptance while that Mac is locked. The previous one-way RDP experiment
+was rolled back and is not part of this repair. The 19 isolated clipboard checks
+pass, including actual multi-file bytes, unknown totals and disconnect cleanup;
+the new multi-file runtime still awaits deployment and a real Mac two-file
+check. CPU/GPU prototypes still await actual Portal-to-UU integration and
+controller latency comparison.
 
 The upstream `docs/releases/v0.2.0.md` and published `v0.1.0` tag remain historical
 records. `0.2.0-work` is a local working version pending controller acceptance.

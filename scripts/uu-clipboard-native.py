@@ -9,6 +9,7 @@ import os
 from pathlib import Path
 import queue
 import select
+import shutil
 import signal
 import socket
 import struct
@@ -25,6 +26,8 @@ MAGIC = 0x43425555
 MAX_BYTES = 64 * 1024 * 1024
 MAX_PIXELS = 16 * 1024 * 1024
 TEXT, PNG, DIB, GET_IMAGE, FILE, GET_HOST = range(6)
+FILE_BEGIN, FILE_CHUNK, FILE_END, FILE_ABORT = range(6, 10)
+MAX_FILES, MAX_BATCH = 64, 256 * 1024 * 1024
 Image.MAX_IMAGE_PIXELS = MAX_PIXELS
 
 
@@ -106,6 +109,186 @@ def stage_file(packet, root):
     return path
 
 
+def file_manifest(data):
+    count, = struct.unpack_from("<I", data)
+    if not 1 <= count <= MAX_FILES:
+        raise ValueError("a copy supports 1 to 64 files")
+    files, offset = [], 4
+    for _ in range(count):
+        length, size = struct.unpack_from("<Iq", data, offset)
+        offset += 12
+        if not 1 <= length <= 255 or offset + length > len(data):
+            raise ValueError("invalid filename")
+        name = data[offset:offset + length].decode("utf-8")
+        offset += length
+        if name in (".", "..") or any(c in name for c in "/\\\0"):
+            raise ValueError("invalid filename")
+        if not -1 <= size <= MAX_BYTES:
+            raise ValueError("each file is limited to 64 MiB")
+        files.append({"name": name, "size": None if size == -1 else size})
+    if offset != len(data) or sum(f["size"] or 0 for f in files) > MAX_BATCH:
+        raise ValueError("a copy is limited to 256 MiB")
+    return files
+
+
+class FileProgress:
+    """Non-focusing GTK window; counters come only from received file bytes."""
+    def __init__(self):
+        self.window = None
+        self.expires = None
+        self.dismissed = False
+        self.unknown_bars = []
+        self.next_pulse = 0
+        self.Gtk = None
+        if os.environ.get("UURB_CLIPBOARD_PROGRESS", "1") == "0":
+            return
+        import gi
+        gi.require_version("Gtk", "3.0")
+        from gi.repository import Gtk
+        if Gtk.init_check()[0]:
+            self.Gtk = Gtk
+
+    def update(self, data, new=False):
+        if new:
+            self.dismissed = False
+            self.expires = None
+        if not self.Gtk or self.dismissed:
+            return
+        Gtk = self.Gtk
+        if self.window is None:
+            self.window = Gtk.Window(title="UU 文件接收")
+            self.window.set_accept_focus(False)
+            self.window.set_focus_on_map(False)
+            self.window.set_default_size(390, 150)
+            box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+            box.set_border_width(14)
+            self.window.add(box)
+            self.name, self.detail = Gtk.Label(xalign=0), Gtk.Label(xalign=0)
+            self.name.set_line_wrap(True)
+            self.detail.set_line_wrap(True)
+            self.file_bar, self.total_bar = Gtk.ProgressBar(), Gtk.ProgressBar()
+            self.file_bar.set_show_text(True)
+            self.total_bar.set_show_text(True)
+            for widget in (self.name, self.file_bar, self.total_bar, self.detail):
+                box.pack_start(widget, False, False, 0)
+            self.window.connect("destroy", self.closed)
+            self.window.show_all()
+        self.name.set_text(f'{data["file_index"]}/{data["file_count"]} · {data["filename"]}')
+        self.unknown_bars = []
+        for bar, received, total in (
+            (self.file_bar, data["received"], data["total"]),
+            (self.total_bar, data["bytes_received"], data["bytes_total"])
+        ):
+            if total is None:
+                bar.pulse()
+                if data["state"] == "receiving":
+                    self.unknown_bars.append(bar)
+                bar.set_text(f"已接收 {received:,} 字节 · 总量未知")
+            else:
+                bar.set_fraction(min(1, received / total) if total else 1)
+                percent = min(100, received * 100 / total) if total else 100
+                bar.set_text(f"{received:,} / {total:,} 字节 · {percent:.1f}%")
+        state = data["state"]
+        self.detail.set_text("全部接收完成，可以粘贴" if state == "completed" else
+                             "接收失败：" + data.get("error", "") if state == "failed" else
+                             "正在接收，完成后即可粘贴")
+        if state == "completed":
+            self.expires = time.monotonic() + 5
+
+    def closed(self, *_):
+        self.window = None
+        self.dismissed = True
+
+    def tick(self):
+        if self.window and self.expires and time.monotonic() >= self.expires:
+            self.window.destroy()
+        if self.Gtk:
+            if self.window and time.monotonic() >= self.next_pulse:
+                for bar in self.unknown_bars:
+                    bar.pulse()
+                self.next_pulse = time.monotonic() + 0.1
+            while self.Gtk.events_pending():
+                self.Gtk.main_iteration_do(False)
+
+
+class FileTransfer:
+    def __init__(self, files, root):
+        root.mkdir(parents=True, exist_ok=True, mode=0o700)
+        self.folder = Path(tempfile.mkdtemp(prefix="copy-", dir=root))
+        self.files = files
+        self.paths, used = [], set()
+        for entry in files:
+            path = Path(entry["name"])
+            name, index = path.name, 2
+            while name in used:
+                name = f"{path.stem} ({index}){path.suffix}"
+                index += 1
+            if len(name.encode("utf-8")) > 255:
+                shutil.rmtree(self.folder)
+                raise ValueError("duplicate filename exceeds basename limit")
+            used.add(name)
+            self.paths.append(self.folder / name)
+        self.index, self.received, self.bytes_received = 0, 0, 0
+        self.total = sum(f["size"] for f in files) if all(f["size"] is not None for f in files) else None
+        self.state, self.error = "receiving", None
+        self.output = self.paths[0].open("xb")
+        self.digest = hashlib.sha256()
+        self.hashes = []
+
+    def snapshot(self):
+        entry = self.files[self.index]
+        total = entry["size"]
+        return {"kind": "file", "state": self.state, "filename": entry["name"],
+                "file_index": self.index + 1, "file_count": len(self.files),
+                "received": self.received, "total": total,
+                "percent": (None if total is None else min(100, self.received * 100 / total) if total else 100),
+                "bytes_received": self.bytes_received, "bytes_total": self.total,
+                "total_percent": (None if self.total is None else min(100, self.bytes_received * 100 / self.total) if self.total else 100),
+                "error": self.error}
+
+    def chunk(self, data):
+        index, = struct.unpack_from("<I", data)
+        block = data[4:]
+        if index != self.index or not 0 < len(block) <= 65536:
+            raise ValueError("invalid file chunk")
+        received = self.received + len(block)
+        size = self.files[index]["size"]
+        if received > MAX_BYTES or self.bytes_received + len(block) > MAX_BATCH:
+            raise ValueError("file exceeds 64 MiB or copy exceeds 256 MiB")
+        if size is not None and received > size:
+            raise ValueError("file data exceeds declared length")
+        self.output.write(block)
+        self.digest.update(block)
+        self.received = received
+        self.bytes_received += len(block)
+
+    def end(self, data):
+        if len(data) != 4 or struct.unpack("<I", data)[0] != self.index:
+            raise ValueError("invalid file completion")
+        size = self.files[self.index]["size"]
+        if size is not None and size != self.received:
+            raise ValueError("file ended before declared length")
+        self.output.flush()
+        os.fsync(self.output.fileno())
+        self.output.close()
+        self.files[self.index]["size"] = self.received
+        self.hashes.append(self.digest.hexdigest())
+        if self.index + 1 == len(self.files):
+            self.total = self.bytes_received
+            self.state = "completed"
+            return True
+        self.index += 1
+        self.received = 0
+        self.digest = hashlib.sha256()
+        self.output = self.paths[self.index].open("xb")
+        return False
+
+    def abort(self, reason):
+        self.output.close()
+        shutil.rmtree(self.folder)
+        self.state, self.error = "failed", reason
+
+
 class Clipboard:
     def __init__(self, staging, status_file):
         self.d = display.Display()
@@ -121,6 +304,10 @@ class Clipboard:
         self.image_digest = None
         self.text_digest = None
         self.image_dirty = False
+        self.file_transfer = None
+        self.file_progress = None
+        self.progress_file = status_file.with_name("clipboard-transfer.json")
+        self.last_progress = 0
         self.d.xfixes_query_version()
         self.d.xfixes_select_selection_input(self.window, self.clip, 7)
         self.d.flush()
@@ -141,6 +328,37 @@ class Clipboard:
         self.d.sync()
         if self.d.get_selection_owner(self.clip) != self.window:
             raise RuntimeError("clipboard owner was not acquired")
+
+    def file_update(self, force=False, new=False):
+        transfer = self.file_transfer
+        if not transfer or (not force and time.monotonic() - self.last_progress < 0.1):
+            return
+        data = {"timestamp": time.time(), **transfer.snapshot()}
+        self.progress_file.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+        temporary = self.progress_file.with_suffix(".tmp")
+        temporary.write_text(json.dumps(data) + "\n")
+        temporary.replace(self.progress_file)
+        if self.file_progress is None:
+            self.file_progress = FileProgress()
+        self.file_progress.update(data, new)
+        self.last_progress = time.monotonic()
+
+    def file_abort(self, reason):
+        if self.file_transfer:
+            self.file_transfer.abort(reason)
+            self.file_update(force=True)
+            self.file_transfer = None
+        else:
+            data = {"timestamp": time.time(), "kind": "file", "state": "failed",
+                    "filename": "文件接收", "file_index": 0, "file_count": 0,
+                    "received": 0, "total": None, "percent": None,
+                    "bytes_received": 0, "bytes_total": None, "total_percent": None,
+                    "error": reason}
+            self.progress_file.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+            self.progress_file.write_text(json.dumps(data) + "\n")
+            if self.file_progress is None:
+                self.file_progress = FileProgress()
+            self.file_progress.update(data, new=True)
 
     def operation(self, kind, data):
         if kind == TEXT:
@@ -171,6 +389,38 @@ class Clipboard:
             self.record({"kind": "file", "direction": "controller-to-native",
                          "staged_path": str(path), "size": path.stat().st_size,
                          "sha256": hashlib.sha256(path.read_bytes()).hexdigest()})
+        elif kind == FILE_BEGIN:
+            self.file_abort("Replaced by a new copy")
+            self.file_transfer = FileTransfer(file_manifest(data), self.staging)
+            self.file_update(force=True, new=True)
+        elif kind == FILE_CHUNK:
+            if self.file_transfer is None:
+                raise ValueError("file transfer has not started")
+            self.file_transfer.chunk(data)
+            self.file_update()
+        elif kind == FILE_END:
+            if self.file_transfer is None:
+                raise ValueError("file transfer has not started")
+            transfer = self.file_transfer
+            if transfer.end(data):
+                uris = [path.as_uri().encode() for path in transfer.paths]
+                self.publish({"text/uri-list": b"\r\n".join(uris) + b"\r\n",
+                              "x-special/gnome-copied-files": b"copy\n" + b"\n".join(uris) + b"\n"})
+                self.image_digest = self.text_digest = None
+                self.file_update(force=True)
+                self.record({"kind": "file", "direction": "controller-to-native",
+                             "state": "completed", "file_count": len(uris),
+                             "bytes_received": transfer.bytes_received,
+                             "staged_paths": [str(path) for path in transfer.paths],
+                             "staged_path": str(transfer.paths[0]),
+                             "size": transfer.files[0]["size"], "sha256": transfer.hashes[0],
+                             "files": [{"name": entry["name"], "size": entry["size"], "sha256": digest}
+                                       for entry, digest in zip(transfer.files, transfer.hashes)]})
+                self.file_transfer = None
+            else:
+                self.file_update(force=True)
+        elif kind == FILE_ABORT:
+            self.file_abort(data.decode("utf-8")[:300])
         elif kind in (GET_IMAGE, GET_HOST):
             if not self.image_dirty:
                 return b""
@@ -286,6 +536,7 @@ def serve(listener, token, work):
     while True:
         client, _ = listener.accept()
         with client:
+            file_active, file_count = False, 0
             client.settimeout(2)
             try:
                 magic, version = struct.unpack("<II", exact(client, 8))
@@ -294,18 +545,29 @@ def serve(listener, token, work):
                 client.sendall(struct.pack("<IIII", MAGIC, 0, 1, 0))
                 while True:
                     magic, sequence, length, kind = struct.unpack("<IIII", exact(client, 16))
-                    if magic != MAGIC or length > MAX_BYTES or kind > GET_HOST:
+                    if magic != MAGIC or length > MAX_BYTES or kind > FILE_ABORT:
                         raise ValueError("invalid request")
                     data = exact(client, length)
                     answer = queue.Queue(1)
                     work.put((kind, data, answer))
                     output, error = answer.get(timeout=3)
+                    if kind == FILE_BEGIN and not error:
+                        file_active = True
+                        file_count, = struct.unpack_from("<I", data)
+                    elif kind == FILE_ABORT or error or (kind == FILE_END and
+                            len(data) == 4 and struct.unpack("<I", data)[0] + 1 == file_count):
+                        file_active = False
+                    # UU may need to fetch a delayed OLE stream before our next chunk.
+                    client.settimeout(30 if file_active else 2)
                     size = len(output) if kind in (GET_IMAGE, GET_HOST) else (length if not error else 0)
                     client.sendall(struct.pack("<IIII", MAGIC, sequence, size, error))
                     if kind in (GET_IMAGE, GET_HOST) and output:
                         client.sendall(output)
             except (EOFError, OSError, ValueError, queue.Empty):
                 pass
+            finally:
+                if file_active:
+                    work.put((FILE_ABORT, b"File connection interrupted", None))
 
 
 def main():
@@ -329,21 +591,29 @@ def main():
         raise SystemExit(0)
     signal.signal(signal.SIGTERM, stop)
     try:
-        print("Native clipboard ready; text+bitmap+single-file; bitmap bidirectional.", flush=True)
+        print("Native clipboard ready; text+bitmap+multi-file streaming; bitmap bidirectional.", flush=True)
         while True:
+            if clipboard.file_progress:
+                clipboard.file_progress.tick()
             while clipboard.d.pending_events():
                 clipboard.event(clipboard.d.next_event())
             try:
                 kind, data, answer = work.get_nowait()
             except queue.Empty:
-                select.select([clipboard.d.fileno()], [], [], 0.02)
+                select.select([clipboard.d.fileno()], [], [], 0.002 if clipboard.file_transfer else 0.02)
                 continue
             try:
                 output = clipboard.operation(kind, data)
-                answer.put((output or b"", 0))
-            except (ValueError, OSError, RuntimeError, struct.error):
-                answer.put((b"", 0x3001))
+                if answer is not None:
+                    answer.put((output or b"", 0))
+            except (ValueError, OSError, RuntimeError, struct.error) as error:
+                if kind >= FILE_BEGIN:
+                    clipboard.file_abort(str(error))
+                if answer is not None:
+                    answer.put((b"", 0x3001))
     finally:
+        if clipboard.file_transfer:
+            clipboard.file_abort("Clipboard helper stopped")
         args.ready_file.unlink(missing_ok=True)
         listener.close()
         clipboard.d.close()

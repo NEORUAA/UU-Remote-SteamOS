@@ -16,6 +16,16 @@
 #define UURB_CLIPBOARD_FILE 4U
 /* Read response payload: uint32 kind followed by UTF-8 text or DIBV5. */
 #define UURB_CLIPBOARD_GET_HOST 5U
+/* FILE_BEGIN: uint32 count, then {uint32 UTF8 name bytes, int64 size (-1
+ * unknown), name}. CHUNK: uint32 index + bytes; END: uint32 index.
+ * ABORT: UTF8 failure reason. Only END of the last file publishes URI paths. */
+#define UURB_CLIPBOARD_FILE_BEGIN 6U
+#define UURB_CLIPBOARD_FILE_CHUNK 7U
+#define UURB_CLIPBOARD_FILE_END 8U
+#define UURB_CLIPBOARD_FILE_ABORT 9U
+#define UURB_CLIPBOARD_MAX_FILES 64U
+#define UURB_CLIPBOARD_MAX_BATCH UINT32_C(268435456)
+#define UURB_CLIPBOARD_FILE_BLOCK 65536U
 
 #define UURB_X11_CLIPBOARD_ERROR_BAD_REQUEST UINT32_C(0x3001)
 #define UURB_X11_CLIPBOARD_ERROR_INVALID_TEXT UINT32_C(0x3002)
