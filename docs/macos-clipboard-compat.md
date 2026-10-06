@@ -33,8 +33,19 @@ controller verification, `open -a "build/macos/UU Clipboard Compat.app" --args
 file contents or network data. Disabling or quitting stops future conversions.
 No login item is installed by the build script.
 
-This helper is pending compilation and a real ordinary-PNG controller check.
-The TIFF-only and PNG-plus-TIFF diagnostics are accepted; they do not establish
-that this automatic helper works in a normal app.
-Acceptance must use a distinct Mac PNG, verify that the helper adds TIFF,
-observe GameViewer's new DIB and compare the actual native GTK pixels.
+## Acceptance and current state · 2026-10-06
+
+The settings UI compiled on the actual Mac, and an ordinary PNG copy passed
+with the automatic helper: its TIFF offer reached UU and native Ubuntu with
+matching image pixels. That is historical acceptance with this local companion,
+not a guarantee for all official Mac UU versions or image-copy sources.
+
+The reference helper is currently **not running**. Its saved
+`imageCompatibilityEnabled` preference remains enabled; not running and a
+saved disabled preference are different states. No launch or preference change
+was made for this documentation update. Current reverse Ubuntu → Mac freshness
+and color acceptance is still pending. See the [development update](updates/2026-10-06.md).
+
+For a later incoming check, use a distinct Mac PNG, verify that the running
+helper adds TIFF, observe the new Windows image offer and compare the actual
+native GTK pixels. A previously passing sample does not establish a new result.

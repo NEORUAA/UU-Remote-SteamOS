@@ -6,6 +6,20 @@
 
 橋接發布標籤與批准的 Windows UU 版本分開管理。
 
+## Plus 0.2.0-work — 2026-10-06
+
+- **終端斷線後接著用：**可選 `persistent` 模式讓重連回到原 shell、目錄與工作，安裝預設仍為 `fresh`。
+
+- **一次接收多個檔案：**在控制端複製普通檔案，接收完成後貼到 Ubuntu 檔案管理器；顯示實際位元組進度。
+
+- **圖片格式相容：**保留原始 PNG 與 DIBV5／DIB，可選 Mac 助手為 PNG 補充 TIFF。
+
+- **原生擷取探索：**可選 CPU／GPU 原型目前仍屬實驗，不包含在預設安裝。
+
+僅支援普通檔案入站；目前 Ubuntu → Mac 圖片同步與雙控制端焦點仍待解決。
+
+[CPU (MIT)](../vendor/uur-native-cpu/NOTICE) · [GPU (AGPL-3.0)](../vendor/uuway-gpu-component/README.md) · [使用與更新說明（英文）](../docs/updates/2026-10-06.md)
+
 ## Plus 0.1.0 — 2026-10-03
 
 Plus 基於 MIT 許可的上游橋接。

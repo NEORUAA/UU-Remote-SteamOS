@@ -14,6 +14,8 @@
 
 720p/1080p/1440p/4K nach Bildschirm/Verbindung wählen. Qualität, angeforderte FPS und Limit bleiben getrennt.
 
+**0.2.0-work · 2026-10-06:** Nur eingehende reguläre Dateien. Aktuelle Ubuntu → Mac-Bildsynchronisierung und Fokusverlust zwischen zwei Controllern bleiben offen. [Anleitung und Update auf Englisch](../../updates/2026-10-06.md)
+
 ## Alltag
 
 Die jüngsten Verbesserungen betreffen chinesische Eingabe, das Einfügen von Text und die Fensterbedienung.
@@ -22,7 +24,7 @@ Die jüngsten Verbesserungen betreffen chinesische Eingabe, das Einfügen von Te
 | --- | --- | --- | --- |
 | Chinesisch am Telefon | Frühere Telefoneingabe in Plus | Ein Teil des übermittelten Textes kam nicht richtig auf dem Desktop an | Chinesischer Text über die direkte Telefonverbindung erreicht den Ubuntu-Desktop korrekt |
 | Kopieren und Einfügen | Früherer Textrelay in Plus | Trotz neu kopiertem Text konnte noch der alte Inhalt eingefügt werden | Neu kopierter Text steht aktuell zum Einfügen bereit; gewöhnliches Kopieren und Einfügen am Computer funktioniert |
-| UU-Einstellungen und Popups | Frühere Verwaltungsansicht in Plus | Verwaltungsfenster konnten das Desktopbild überlagern oder den Fokus falsch hinterlassen | Einstellungen bleiben vom Desktopbild getrennt; nach dem Schließen der Verwaltungsansicht liegt der Eingabefokus wieder auf dem Desktop |
+| UU-Einstellungen und Popups | Frühere Verwaltungsansicht in Plus | Verwaltungsfenster konnten das Desktopbild überlagern oder den Fokus falsch hinterlassen | UU-Verwaltung und Menüs werden getrennt erfasst. Fokusverlust beim Wechsel zwischen zwei Controllern bleibt ungelöst. |
 | Schärfe und Größe | Plus-Versuch mit größerer Zeichenfläche | Eine Vergrößerung der getesteten 4K-Quelle brachte keine Details und sah schlechter aus | Vier Profile zeigen den ganzen Desktop und stellen die gespeicherte Größe wieder her; für die getestete Quelle genügt 4K |
 | Neuverbindung | Update des Mac-UU-Clients | Nach dem Mac-UU-Update mussten alltägliche Funktionen geprüft werden | Neuverbindung, direkte chinesische Eingabe und Textpaste funktionieren weiter; die 4K-Nutzung fühlt sich ähnlich an |
 

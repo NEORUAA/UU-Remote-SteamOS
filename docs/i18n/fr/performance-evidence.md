@@ -14,6 +14,8 @@
 
 Choisissez 720p/1080p/1440p/4K selon écran/connexion ; qualité, FPS demandés et plafond restent séparés.
 
+**0.2.0-work · 2026-10-06:** Fichiers ordinaires entrants uniquement. La synchronisation actuelle Ubuntu → Mac et le focus entre deux contrôleurs restent ouverts. [Utilisation et mise à jour en anglais](../../updates/2026-10-06.md)
+
 ## Usage courant
 
 Les améliorations récentes portent sur la saisie du chinois, le collage de texte et la gestion des fenêtres.
@@ -22,7 +24,7 @@ Les améliorations récentes portent sur la saisie du chinois, le collage de tex
 | --- | --- | --- | --- |
 | Chinois sur téléphone | Ancienne saisie mobile dans Plus | Une partie du texte envoyé n’arrivait pas correctement au bureau | Le chinois envoyé par connexion directe du téléphone arrive correctement sur le bureau Ubuntu |
 | Copier et coller | Ancien relais de texte dans Plus | Un nouveau copier pouvait encore être suivi du collage d’un ancien texte | Le texte nouvellement copié est actualisé pour le collage sur le bureau ; le copier/coller courant depuis un ordinateur fonctionne |
-| Réglages et fenêtres UU | Ancienne vue de gestion dans Plus | La gestion pouvait recouvrir l’image du bureau ou laisser le focus ailleurs | Les réglages restent séparés du bureau ; fermer la vue de gestion rend le focus au bureau |
+| Réglages et fenêtres UU | Ancienne vue de gestion dans Plus | La gestion pouvait recouvrir l’image du bureau ou laisser le focus ailleurs | Le gestionnaire UU et ses menus sont capturés séparément. La perte de focus entre deux contrôleurs reste non résolue. |
 | Netteté et taille | Essai d’agrandissement du canevas de Plus | Agrandir la source 4K testée n’ajoutait aucun détail et dégradait l’image | Quatre profils affichent le bureau entier et restaurent la taille enregistrée ; 4K suffit pour la source testée |
 | Reconnexion | Mise à jour du client Mac UU | La mise à jour Mac UU demandait de revoir les usages courants | Reconnexion, chinois direct et collage restent fonctionnels ; la sensation en 4K est similaire |
 

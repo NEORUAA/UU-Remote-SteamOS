@@ -6,6 +6,27 @@
 
 Bridge release tags and the approved Windows UU version are tracked separately.
 
+## Plus 0.2.0-work — 2026-10-06
+
+Development source update; Plus 0.1.0 remains the last tagged release.
+
+- Optional persistent Ubuntu terminal workspace across reconnects; raw terminal
+  I/O and session handoff improvements. Fresh sessions remain the default.
+- Incoming multi-file clipboard reception, with actual byte progress,
+  cancellation and interrupted-batch cleanup. Regular files only.
+- Original PNG preservation alongside DIBV5/DIB image offers, and a single native
+  clipboard authority.
+- Optional Mac PNG → TIFF companion with a local settings window.
+- Optional native capture experiments: MIT CPU adaptation and an independent
+  AGPL-3.0 GPU component. No real-session performance gain is claimed.
+- Updated homepages and changelogs in eleven languages, with bilingual update
+  illustrations and usage links.
+
+Known limits: rapid batch terminal input, current Ubuntu → Mac image acceptance
+and dual-controller focus remain open. Outgoing files and directory copies are
+not implemented. Recent focus/public-input trial candidates are excluded.
+[Update notes](docs/updates/2026-10-06.md) · [Working-version details](docs/releases/plus-v0.2.0-work.md)
+
 ## Plus 0.1.0 — 2026-10-03
 
 Plus builds on the MIT-licensed upstream bridge.

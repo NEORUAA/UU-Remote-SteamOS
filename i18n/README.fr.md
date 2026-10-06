@@ -32,6 +32,24 @@ L’installateur vise Ubuntu 24.04 / GNOME 46 et Ubuntu 26.04 / GNOME 50 sur x86
 
 Les onze pages de langue et leurs guides techniques décrivent Plus dans chaque langue ; l’anglais reste la référence canonique.
 
+## Nouveautés de 0.2.0-work
+
+- **Reprendre le terminal :** le mode optionnel `persistent` conserve shell, répertoire et tâches à la reconnexion ; défaut : `fresh`.
+
+- **Recevoir plusieurs fichiers :** copiez des fichiers ordinaires côté contrôleur, puis collez le lot complet dans Ubuntu ; progression en octets reçus.
+
+- **Compatibilité des images :** PNG original avec DIBV5/DIB ; un compagnon Mac optionnel ajoute TIFF pour PNG.
+
+- **Explorer la capture native :** prototypes CPU/GPU optionnels et expérimentaux, hors installation par défaut.
+
+[CPU (MIT)](../vendor/uur-native-cpu/NOTICE) · [GPU (AGPL-3.0)](../vendor/uuway-gpu-component/README.md)
+
+<img src="../docs/images/uu-plus-update-20261006-en.png" alt="Nouveautés de 0.2.0-work" width="1120">
+
+Fichiers ordinaires entrants uniquement. La synchronisation actuelle Ubuntu → Mac et le focus entre deux contrôleurs restent ouverts.
+
+[Utilisation et mise à jour en anglais](../docs/updates/2026-10-06.md) · [SVG](../docs/images/uu-plus-update-20261006-en.svg)
+
 ## De l'installation au travail à distance
 
 1. Installez le pont sur votre bureau Ubuntu.
@@ -48,7 +66,7 @@ Le projet amont fournit le relais de bureau, le clavier et la souris, le traitem
 | Ubuntu et UU plus récents | Ubuntu 26.04 / GNOME 50 et UU 4.42, tout en conservant l’installation Ubuntu 24.04. |
 | Choisir son canevas | Passez entre 720p, 1080p, 1440p et 4K dans le sélecteur graphique. Le bureau complet s’adapte au canevas et le réglage enregistré peut être restauré. |
 | Chinois, code et copier-coller | Corrige la transmission du texte du téléphone et l’actualisation du presse-papiers. Le nouveau texte arrive sur le bureau ; code et texte multiligne conservent leur contenu. |
-| Ouvrir les réglages, rester connecté | Capture séparément le gestionnaire UU et ses menus. Fermer la visionneuse rend le focus au relais du bureau. |
+| Ouvrir les réglages, rester connecté | Le gestionnaire UU et ses menus sont capturés séparément. La perte de focus entre deux contrôleurs reste non résolue. |
 | Des outils locaux plus pratiques | Accès aux réglages de qualité, VNC, FreeRDP et Openbox, avec améliorations des polices, du DPI et du démarrage. |
 | Installer et entretenir | Compile le relais depuis des sources fixées et contrôle les composants avant installation. Restaure les changements de canevas échoués et propose un aperçu de la désinstallation. |
 

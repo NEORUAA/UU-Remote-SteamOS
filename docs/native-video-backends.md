@@ -1,9 +1,11 @@
 # Native capture experiments on the common Plus base
 
-The stable default remains legacy input, an RDP video relay and four resolution
-choices ending at 4K. The CPU and GPU experiments use the same installed
-`0.2.0-work` UU, native terminal, image/file clipboard, input and configuration
-base. Only the capture adapter and its producer differ. Wine 11.0 stays installed.
+The tested desktop reference uses legacy input, an RDP video relay and four
+canvas sizes ending at 4K. This is distinct from [fresh-install defaults](architecture.md#defaults-and-supported-branches).
+The CPU and GPU adapters are optional developer prototypes. Their intended
+comparison shares a verified Plus UU, terminal, clipboard and input base;
+only the capture producer and adapter should differ. Such a matched real
+controller comparison has not yet been completed. Wine 11.0 stays installed.
 
 The CPU producer and capture adapter are adapted from the MIT-licensed uur
 sources in `vendor/uur-native-cpu`. The producer negotiates Portal-authorized
@@ -35,8 +37,10 @@ scripts/build-native-gpu.sh
 ```
 
 `scripts/uu-native-video.py` prepares one private prefix from the installed Plus
-base. That prefix contains account state and must stay private. Both backend
-commands reuse it. Preparing the lab does not start UU or request screen sharing.
+base. That prefix contains account state and must stay private. Both backend commands can reuse it, but an existing lab is not evidence that
+it still matches the installed source. Validate the common runtime files and
+installed digest, and prepare a fresh private base after source changes.
+Preparing the lab does not start UU or request screen sharing.
 
 ```sh
 /usr/bin/python3 scripts/uu-native-video.py prepare \
@@ -45,7 +49,9 @@ commands reuse it. Preparing the lab does not start UU or request screen sharing
 
 The following runs request sharing the selected physical monitor via the Portal
 and then attach a native capture DLL to the private Plus UU process. They are
-experimental runs, not verified deployment commands. Coordinate the controller
+experimental runs, not verified deployment commands. The committed short-run interface is a
+developer tool: its duration is not an accepted controller-ready measurement
+window. Coordinate the controller
 and stop the live bridge during the private UU comparison, since the cloned
 account/device state must not compete with the live instance. Restore the live
 bridge after the comparison. Use the same physical monitor, 4K mode and short
@@ -79,5 +85,10 @@ prove a live Portal DMA-BUF frame reaches UU or lower Mac latency.
 Portal CreateSession and SelectSources work on this host's ScreenCast v5. The
 session was closed without Start or a sharing dialog. A real monitor consent,
 CPU and GPU stream negotiation, native adapter attachment to UU and a short
-controller comparison remain pending. The exact evidence is kept in
-`.omc/artifacts/native-45-compare-20261004/`.
+controller comparison remain pending. Private development receipts are not public deployment artifacts.
+
+A useful comparison must bind the lab to the same completed Plus baseline,
+start its measurement only after the real controller connects, use identical
+monitor/canvas/motion settings, and confirm restoration of the reference bridge.
+The existing local probes and short-run commands do not establish this full
+sequence. No FPS, latency percentage or production readiness is claimed.

@@ -1,99 +1,102 @@
 # UU Remote Ubuntu Plus 0.2.0-work
 
-This working version adds native terminal session persistence, bidirectional
-bitmap clipboard, and incoming multi-file clipboard to the existing Plus
-bridge. It retains the legacy input route, RDP desktop relay, four resolution
-choices ending at 4K, Wine 11.0 and the audited UU 4.42 runtime.
+Updated 2026-10-06. This development source follows tagged Plus 0.1.0; it does
+not create a new release tag. See the [illustrated update](../updates/2026-10-06.md)
+for real-session results and the remaining checks.
 
 ## Terminal session
 
-`UURB_TERMINAL_SESSION_MODE=persistent` attaches terminal windows to the same
-`main` tmux workspace. Closing a controller connection or reaching transport
-EOF detaches the client while preserving the shell, working directory and jobs.
-Typing `exit` or Ctrl-D still closes the shell. The install default is `fresh`;
-the current test host enables `persistent`. A full bridge service restart,
-logout or reboot is outside this persistence guarantee.
+`UURB_TERMINAL_SESSION_MODE=persistent` attaches UU terminal windows to the
+same independent `main` tmux workspace. Closing a controller connection or
+reaching transport EOF detaches the client while preserving the shell, working
+directory and jobs. `exit` or Ctrl-D still closes the shell. Fresh sessions
+remain the install default. A bridge service restart, logout or reboot is
+outside this persistence guarantee.
 
-## Clipboard
+The terminal proxy preserves raw terminal bytes through the ConPTY compatibility
+path and uses a local authenticated broker. Session mode is carried by the
+handoff; recovery targets only the owned UU MUX. A real Mac close/reopen cycle
+on the current source retained the shell, directory and background job.
+Ordinary input, Ctrl-C, resize and clear passed. Rapid batch input remains
+unresolved. Configuration and shared-workspace behavior are described in the
+[terminal guide](../native-ubuntu-terminal.md#keep-the-terminal-across-reconnects-opt-in).
 
-The native owner publishes `image/png` and accepts PNG, common 24/32-bit DIB,
-and DIBV5 from Wine. Native PNG copies are converted to Win32 DIBV5 and DIB for
-the controller. UTF-8 text also travels in both directions through this native
-owner. While the extended companion is active, RDP CLIPRDR is disabled so the
-same image does not return through a second clipboard channel and overwrite a
-new controller copy. RDP still carries desktop video and physical input; if
-the native companion is unavailable at startup, its original clipboard remains
-enabled.
-Bitmap reads retain the owner's DIB publication order: a synthesized Wine V5
-cache must not take priority over a newly rendered original DIB.
+## Clipboard images and text
 
-Incoming files support CF_HDROP and OLE FileGroupDescriptorW lists, with
-FileContents supplied as IStream or HGlobal. Files are received in 64 KiB
-chunks into `~/.local/share/uu-remote/clipboard-files/copy-*/`; only after the
-entire batch is complete are `text/uri-list` and GNOME's copied-file format
-published. A new directory for each copy prevents overwriting prior files;
-duplicate names within a batch receive a numeric suffix.
-Users can paste the file into a file manager. Staged files remain until manually
-removed; remove them after pasting or when those clipboard references are no
-longer needed. Directory copies and outgoing file transfer are not implemented.
-Each file is limited to 64 MiB, with up to 64 files and 256 MiB per copy. Images
-remain limited to 16 million pixels.
+The native owner handles UTF-8 text and image exchange, preserving original PNG
+bytes alongside Win32 DIBV5/DIB offers. It accepts common 24/32-bit DIB and
+DIBV5, and prefers an original DIB over a stale synthesized Wine V5 cache.
+While the extended companion is active, RDP CLIPRDR is disabled to avoid two
+clipboard authorities overwriting new copies. If the native companion is
+unavailable at startup, the original RDP clipboard remains available.
 
-A non-focusing **UU 文件接收** window shows the current filename and i/N,
-actual received/total bytes and percentages for the file and batch. Unknown
-totals stay indeterminate. Completion is displayed for five seconds; failure
-remains visible until dismissed. Interrupted copies remove the entire unfinished
-batch and leave the prior clipboard available. A new copy in a native Ubuntu
-application also cancels the batch and keeps the new clipboard selection.
-Counters measure bytes received
-by this bridge; UU's earlier fetching of a delayed file does not expose a byte
-count. Local progress metadata is saved in
-`~/.local/state/uu-remote-bridge/clipboard-transfer.json`.
+Local isolated checks validate exact media bytes and bitmap pixels. They do
+not establish every real controller path. A historical Ubuntu → Mac sample
+passed; newer reverse-image freshness and color acceptance remains pending.
+A failed 24-bit trial was reverted. Do not treat the historical result as
+current complete bidirectional image acceptance.
 
-The helper requires system Python with python3-xlib, python3-pil, python3-gi and
-gir1.2-gtk-3.0. Upgrade and
-rollback snapshots include the helper. Clipboard metadata in
-`~/.local/state/uu-remote-bridge/clipboard-status.json` records direction,
-dimensions or file size and hashes; it does not record text or image contents.
-`native-to-wine-prepared` means the native image was prepared for transport;
-controller acceptance requires a separate observation.
+The [optional Mac helper](../macos-clipboard-compat.md) adds TIFF to ordinary
+PNG copies while preserving their original bytes. Its settings UI and normal
+PNG controller path passed historical checks. The reference helper is currently
+**not running**, with its saved preference still enabled. This companion is
+separate from the official Mac UU application.
 
-## Validation and deployment
+## Incoming multi-file copy
 
-The isolated Wine/Xvfb probe verifies different exact bitmap pixels in both
-directions, CF_HDROP and OLE IStream file contents, Linux URI publication,
-same-image copying after foreign text, duplicate names, partial transfers and
-invalid file names. The authenticated terminal probe verifies reattachment to
-the same shell, preserved working directory/jobs, EOF detach, resizing, removed
-transport credentials and unchanged fresh mode.
+Incoming CF_HDROP and OLE FileGroupDescriptorW lists are supported, with
+FileContents provided as IStream or HGlobal. Files arrive in 64 KiB chunks under
+`~/.local/share/uu-remote/clipboard-files/copy-*/`. Linux `text/uri-list` and
+GNOME copied-file formats are published only after the whole batch completes.
+Copies use new staging directories; duplicate names receive numeric suffixes.
+Completed files can be pasted into a file manager and remain staged until
+manually removed. Outgoing files and directory copies are not implemented.
+Limits are **64 MiB per file, 64 files and 256 MiB per copy**; images are limited
+to 16 million decoded pixels.
 
-These probes do not establish a real Mac controller result. The local deployment
-receipt records that acceptance separately, alongside installed file hashes,
-saved settings and an exact rollback command. FreeRDP's thirteen PE products
-are reused only after checking their fixed hashes and build recipe through the
-normal source-build reuse path; this is not a new cold build.
+The non-focusing **UU 文件接收** window reports the current filename, i/N and
+actual file/batch bytes. Unknown totals stay indeterminate. Completion is shown
+for five seconds; failure remains visible until dismissed. An interrupted
+transfer removes the unfinished batch. A new native Ubuntu copy cancels that
+batch and keeps the new clipboard selection. Counters measure bytes received
+by the bridge; UU's earlier delayed-file fetching exposes no byte counter.
+Metadata is written to `~/.local/state/uu-remote-bridge/clipboard-transfer.json`.
 
-On the current host, terminal reattachment and an incoming single file passed
-their acceptance checks. A distinct 43×29 Ubuntu image also reached the Mac
-with identical RGB pixels. Ordinary PNG-only Mac copies did not produce a
-Windows image offer. A distinct Mac TIFF-only 47×31 image then reached Ubuntu
-and an actual Wayland GTK consumer with identical RGB pixels. A second 53×37
-Mac source advertised TIFF first alongside its original PNG; Ubuntu again
-received identical RGB pixels. The original PNG need not be removed.
+A real Mac → Ubuntu transfer delivered **two files totaling 2,228,224 bytes**
+with both source SHA-256 hashes matching and actual progress displayed.
+Focused probes separately cover partial transfers, unknown totals, native-copy
+cancellation and stale completion rejection. Those probes do not imply that
+every interruption case has been repeated through a real Mac controller.
 
-The [optional Mac compatibility helper](../macos-clipboard-compat.md) preserves
-pure PNG bytes and adds TIFF automatically, with an enable/disable menu switch.
-Its first version compiled on the actual Mac. A settings window has since been
-added for GUI enabling; that revision and its ordinary Preview-copy path await
-Mac acceptance. The previous one-way RDP experiment
-was rolled back and is not part of this repair. The 19 isolated clipboard checks
-pass, including actual multi-file bytes, unknown totals and disconnect cleanup.
-A focused real X-selection probe also verifies that a native copy cancels an
-unfinished batch, removes its staged files, rejects a stale END and preserves
-the new native text. The initial multi-file version is installed with 27
-readiness checks passing; two review corrections await the next serial update
-and a real Mac two-file check. CPU/GPU prototypes still await actual Portal-to-UU integration and
-controller latency comparison.
+The helper uses system Python, python3-xlib, python3-pil, python3-gi and
+GTK 3 introspection. Upgrade and rollback snapshots include it. Clipboard
+status records direction, dimensions or file size and hashes, rather than text
+or image contents. `native-to-wine-prepared` denotes source preparation;
+controller acceptance needs a separate observation.
 
-The upstream `docs/releases/v0.2.0.md` and published `v0.1.0` tag remain historical
-records. `0.2.0-work` is a local working version pending controller acceptance.
+## Experimental capture and focus
+
+Optional [native CPU and GPU capture](../native-video-backends.md) have local
+synthetic checks. The CPU adaptation is MIT; the independent GPU component is
+AGPL-3.0 with source and licensing receipts included. Neither is installed by
+default. A matched Portal → UU → Mac comparison remains pending, so no real
+controller FPS or latency gain is claimed.
+
+Management windows retain independent capture. Dual-controller focus loss is
+unresolved. Recent focus/public-input trial candidates are excluded from this
+source update; the rejected public-input trial was rolled back. The tested
+reference remains legacy input, RDP and four canvas sizes ending at 4K.
+[New-install defaults](../architecture.md#defaults-and-supported-branches)
+remain a separate configuration choice.
+
+## Build and acceptance scope
+
+Reference real-session checks used Ubuntu 26.04 / GNOME 50, Wine 11 and Windows
+UU 4.42.0.2770 with Mac UU. The Ubuntu 24.04 installer target is retained; it
+did not receive a new end-to-end check in this update. Other controller/platform
+combinations require their own acceptance.
+
+FreeRDP's thirteen PE products retain their verified hashes and pinned build
+recipe. Existing outputs are reused through the normal source-build verification
+path; this update is not a new cold FreeRDP build. Upstream release notes and
+the published Plus 0.1.0 tag remain historical records.

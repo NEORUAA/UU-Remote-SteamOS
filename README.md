@@ -35,6 +35,29 @@ The installer targets x86-64 Ubuntu 24.04 / GNOME 46 and Ubuntu 26.04 / GNOME 50
 
 The eleven language pages and technical guides describe Plus in each language; English is the canonical reference.
 
+## What's new in 0.2.0-work
+
+This development version adds terminal session persistence, multi-file reception
+and image-format compatibility work, with optional native capture experiments.
+
+- **Keep your terminal workspace:** enable `persistent` mode to return to the
+  same Ubuntu shell, directory and jobs after reconnecting. Fresh sessions
+  remain the default. [Set up terminal persistence](docs/native-ubuntu-terminal.md#keep-the-terminal-across-reconnects-opt-in).
+- **Receive several files at once:** copy regular files on the controller and
+  paste the completed batch into an Ubuntu file manager. The receive window
+  shows file and batch progress in actual bytes. [File reception](docs/releases/plus-v0.2.0-work.md#incoming-multi-file-copy).
+- **Preserve image formats:** retain original PNG with DIBV5/DIB offers. The
+  optional Mac companion adds TIFF for PNG compatibility. [Mac helper](docs/macos-clipboard-compat.md).
+- **Explore native capture:** optional CPU/GPU prototypes investigate capture
+  paths beyond the RDP relay. These remain experimental. [Developer guide](docs/native-video-backends.md).
+
+<img src="docs/images/uu-plus-update-20261006-en.png" alt="0.2.0-work features: persistent terminal workspace, multi-file reception with byte progress, image compatibility and experimental native capture." width="1120">
+
+File reception supports incoming regular files. Current Ubuntu → Mac image
+synchronization and dual-controller focus remain open. [Known limits and working-version notes](docs/releases/plus-v0.2.0-work.md).
+
+[Update notes and announcement](docs/updates/2026-10-06.md) · [Editable SVG](docs/images/uu-plus-update-20261006-en.svg)
+
 ## From setup to remote work
 
 1. Install the bridge on your Ubuntu desktop.
@@ -51,7 +74,7 @@ Upstream provides the desktop relay, keyboard and mouse input, phone IME handlin
 | Newer Ubuntu and UU | Ubuntu 26.04 / GNOME 50 and UU 4.42 compatibility, with the Ubuntu 24.04 installation path retained. |
 | Pick your canvas | Switch between 720p, 1080p, 1440p and 4K in a graphical selector. Fit the full desktop into the canvas and restore the saved setting. |
 | Chinese, code and copy/paste | Repairs phone text commits and clipboard refresh, so new text reaches the desktop and code snippets and multiline text keep their content. |
-| Open settings. Stay connected. | Capture the UU manager and its popups separately. Closing the viewer returns input focus to the desktop relay. |
+| Open settings. Stay connected. | Capture the UU manager and its popups separately. Dual-controller focus switching remains under investigation. |
 | Better local tools | Launch quality settings, VNC, FreeRDP and Openbox tools, with font, DPI and startup refinements. |
 | Install and maintain | Build the relay from pinned source and check runtime components before installation. Recover failed canvas changes and preview removal before uninstalling. |
 
@@ -157,6 +180,24 @@ and related corrections. To enable it for the dedicated UU Wine environment:
 guard's fallback cursor size. Use `--cursor-guard off` to turn it off.
 Reinstallation briefly reconnects UU.
 
+## Ubuntu terminal and incoming copies
+
+Open **Terminal → PowerShell** in the UU controller to reach the real Ubuntu
+login shell. Opt in to `UURB_TERMINAL_SESSION_MODE=persistent` to reopen the same
+workspace; the [terminal guide](docs/native-ubuntu-terminal.md#keep-the-terminal-across-reconnects-opt-in)
+explains applying the setting at a planned reconnect and how `exit` closes it.
+
+For incoming files, copy regular files in the controller's file manager and
+paste into Ubuntu's file manager. **UU 文件接收** shows the file/batch byte
+progress. The completed batch is staged before it becomes pasteable; failed or
+cancelled unfinished batches are removed. Each file is limited to 64 MiB, with
+up to 64 files and 256 MiB per batch. Completed copies remain in the staging
+folder until you remove them. See the [clipboard notes](docs/releases/plus-v0.2.0-work.md#clipboard-images-and-text).
+
+Images use a separate compatibility path. The [optional Mac PNG helper](docs/macos-clipboard-compat.md)
+adds TIFF while preserving PNG. It is a local opt-in app, not a built-in UU
+feature or a guarantee that every current image route works.
+
 ## Daily use and maintenance
 
 ```bash
@@ -204,6 +245,7 @@ Other GNOME distributions can reuse more of the current desktop integration. KDE
 
 ## Documentation and contributions
 
+- [October development update](docs/updates/2026-10-06.md), [Native terminal](docs/native-ubuntu-terminal.md) and [Mac image compatibility](docs/macos-clipboard-compat.md)
 - [Quality and resolution](docs/quality-guide.md)
 - [Source build](docs/source-build.md) and [Ubuntu 26.04 port](docs/ubuntu-26.04-port.md)
 - [Architecture](docs/architecture.md) and [Security](docs/security.md)
@@ -248,3 +290,5 @@ UU Remote and the other dependencies retain their own licenses and trademarks.
 This is an independent community project.
 
 Payment brand icons: [Simple Icons](https://simpleicons.org/) (CC0); third-party brands retain their trademarks.
+
+The optional GPU capture component has its own [AGPL-3.0 license and source notices](vendor/uuway-gpu-component/README.md); the MIT CPU adapter has [separate attribution](vendor/uur-native-cpu/NOTICE). These prototypes are outside the default installer.

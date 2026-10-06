@@ -33,6 +33,24 @@ El instalador está dirigido a x86-64 Ubuntu 24.04 / GNOME 46 y Ubuntu 26.04 / G
 
 Las once páginas de idioma y sus guías técnicas describen Plus en cada idioma; el inglés es la referencia canónica.
 
+## Novedades en 0.2.0-work
+
+- **Retoma el terminal:** el modo opcional `persistent` conserva shell, directorio y tareas al reconectar; el valor predeterminado sigue siendo `fresh`.
+
+- **Recibe varios archivos:** copia archivos regulares en el controlador y pega el lote completo en Ubuntu; progreso por bytes recibidos.
+
+- **Compatibilidad de imágenes:** PNG original con DIBV5/DIB; un asistente Mac opcional añade TIFF para PNG.
+
+- **Explora captura nativa:** prototipos CPU/GPU opcionales y experimentales, fuera de la instalación predeterminada.
+
+[CPU (MIT)](../vendor/uur-native-cpu/NOTICE) · [GPU (AGPL-3.0)](../vendor/uuway-gpu-component/README.md)
+
+<img src="../docs/images/uu-plus-update-20261006-en.png" alt="Novedades en 0.2.0-work" width="1120">
+
+Solo archivos regulares entrantes. La sincronización actual Ubuntu → Mac y el foco entre dos controladores siguen pendientes.
+
+[Uso y actualización en inglés](../docs/updates/2026-10-06.md) · [SVG](../docs/images/uu-plus-update-20261006-en.svg)
+
 ## De la instalación al trabajo remoto
 
 1. Instala el puente en el escritorio Ubuntu.
@@ -49,7 +67,7 @@ El proyecto original aporta el relé del escritorio, el teclado y el ratón, el 
 | Ubuntu y UU más recientes | Ubuntu 26.04 / GNOME 50 y UU 4.42, conservando la instalación de Ubuntu 24.04. |
 | Elegir el lienzo | Cambia entre 720p, 1080p, 1440p y 4K desde un selector gráfico. Ajusta el escritorio completo al lienzo y recupera el tamaño guardado. |
 | Chino, código y copiar/pegar | Corrige la entrega de texto del teléfono y la actualización del portapapeles. El texto nuevo llega al escritorio y los fragmentos de código y textos de varias líneas conservan su contenido. |
-| Abrir ajustes y seguir conectado | Captura por separado la gestión de UU y sus menús. Al cerrar el visor, el foco de entrada vuelve al relé del escritorio. |
+| Abrir ajustes y seguir conectado | La gestión UU y sus menús se capturan por separado. La pérdida de foco al cambiar entre dos controladores sigue sin resolverse. |
 | Herramientas locales más cómodas | Acceso a calidad, VNC, FreeRDP y Openbox, con mejoras de fuentes, DPI y arranque. |
 | Instalar y mantener | Compila el relé desde fuentes fijadas y comprueba los componentes antes de instalar. Recupera cambios fallidos de lienzo y permite previsualizar la desinstalación. |
 

@@ -6,6 +6,20 @@
 
 Thẻ phát hành của cầu nối và phiên bản Windows UU được phê duyệt được quản lý riêng.
 
+## Plus 0.2.0-work — 2026-10-06
+
+- **Tiếp tục terminal:** chế độ tùy chọn `persistent` giữ shell, thư mục và tác vụ khi kết nối lại; mặc định vẫn là `fresh`.
+
+- **Nhận nhiều tệp:** sao chép tệp thường trên bộ điều khiển, dán cả lô sau khi nhận xong vào Ubuntu; tiến độ theo byte thực nhận.
+
+- **Tương thích ảnh:** giữ PNG gốc cùng DIBV5/DIB; trợ giúp Mac tùy chọn bổ sung TIFF cho PNG.
+
+- **Khám phá chụp gốc:** nguyên mẫu CPU/GPU tùy chọn còn thử nghiệm, không nằm trong cài đặt mặc định.
+
+Chỉ nhận tệp thường. Đồng bộ ảnh Ubuntu → Mac hiện tại và tiêu điểm giữa hai bộ điều khiển còn chưa giải quyết.
+
+[CPU (MIT)](../vendor/uur-native-cpu/NOTICE) · [GPU (AGPL-3.0)](../vendor/uuway-gpu-component/README.md) · [Cách dùng và cập nhật bằng tiếng Anh](../docs/updates/2026-10-06.md)
+
 ## Plus 0.1.0 — 2026-10-03
 
 Plus dựa trên bộ cầu nối gốc với giấy phép MIT.

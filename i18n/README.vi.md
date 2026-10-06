@@ -33,6 +33,24 @@ Bộ cài hướng tới x86-64 Ubuntu 24.04 / GNOME 46 và Ubuntu 26.04 / GNOME
 
 Các trang và hướng dẫn kỹ thuật ở 11 ngôn ngữ giới thiệu Plus bằng cùng ngôn ngữ; tiếng Anh là bản tham chiếu gốc.
 
+## Tính năng mới trong 0.2.0-work
+
+- **Tiếp tục terminal:** chế độ tùy chọn `persistent` giữ shell, thư mục và tác vụ khi kết nối lại; mặc định vẫn là `fresh`.
+
+- **Nhận nhiều tệp:** sao chép tệp thường trên bộ điều khiển, dán cả lô sau khi nhận xong vào Ubuntu; tiến độ theo byte thực nhận.
+
+- **Tương thích ảnh:** giữ PNG gốc cùng DIBV5/DIB; trợ giúp Mac tùy chọn bổ sung TIFF cho PNG.
+
+- **Khám phá chụp gốc:** nguyên mẫu CPU/GPU tùy chọn còn thử nghiệm, không nằm trong cài đặt mặc định.
+
+[CPU (MIT)](../vendor/uur-native-cpu/NOTICE) · [GPU (AGPL-3.0)](../vendor/uuway-gpu-component/README.md)
+
+<img src="../docs/images/uu-plus-update-20261006-en.png" alt="Tính năng mới trong 0.2.0-work" width="1120">
+
+Chỉ nhận tệp thường. Đồng bộ ảnh Ubuntu → Mac hiện tại và tiêu điểm giữa hai bộ điều khiển còn chưa giải quyết.
+
+[Cách dùng và cập nhật bằng tiếng Anh](../docs/updates/2026-10-06.md) · [SVG](../docs/images/uu-plus-update-20261006-en.svg)
+
 ## Từ cài đặt đến làm việc từ xa
 
 1. Cài bridge trên desktop Ubuntu.
@@ -49,7 +67,7 @@ Upstream cung cấp chuyển tiếp desktop, bàn phím và chuột, xử lý IM
 | Ubuntu và UU mới hơn | Ubuntu 26.04 / GNOME 50 và UU 4.42, đồng thời giữ cách cài Ubuntu 24.04. |
 | Chọn khung hình phù hợp | Đổi giữa 720p, 1080p, 1440p, 4K bằng giao diện đồ họa. Co toàn bộ desktop vào khung và khôi phục thiết lập đã lưu. |
 | Tiếng Trung, mã và sao chép/dán | Sửa gửi văn bản từ điện thoại và làm mới bảng nhớ tạm. Văn bản mới đến desktop; đoạn mã và văn bản nhiều dòng giữ nội dung. |
-| Mở thiết lập, giữ kết nối | Chụp riêng quản lý UU và menu. Đóng trình xem trả tiêu điểm nhập về chuyển tiếp desktop. |
+| Mở thiết lập, giữ kết nối | Chụp riêng quản lý UU và menu. Mất tiêu điểm khi đổi hai bộ điều khiển vẫn chưa được giải quyết. |
 | Công cụ cục bộ thuận tiện | Mở chất lượng, VNC, FreeRDP, Openbox với cải tiến phông chữ, DPI và khởi chạy. |
 | Cài đặt và bảo trì | Biên dịch chuyển tiếp từ nguồn cố định và kiểm tra thành phần trước khi cài. Phục hồi thay đổi khung thất bại và xem trước khi gỡ. |
 

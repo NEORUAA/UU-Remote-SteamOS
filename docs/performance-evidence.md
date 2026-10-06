@@ -14,6 +14,14 @@
 
 Choose a canvas for your screen and connection. Plus offers 720p, 1080p, 1440p and 4K; UU's quality, requested FPS and bitrate ceiling remain separate controls.
 
+## Current development status · 2026-10-06
+
+Persistent terminal reattachment and incoming two-file copies have real Mac
+acceptance. Current image synchronization and dual-controller focus are still
+open. Native CPU/GPU results are local synthetic checks; no matched real Mac
+latency or FPS benefit has been measured. See the [illustrated update](updates/2026-10-06.md).
+The earlier everyday feedback below does not replace these current boundaries.
+
 ## Improvements in everyday use
 
 Recent refinements focus on Chinese input, text paste and window handling.
@@ -22,7 +30,7 @@ Recent refinements focus on Chinese input, text paste and window handling.
 | --- | --- | --- | --- |
 | Phone Chinese | Earlier Plus phone input | Some text submitted from the phone did not reach the desktop correctly | Chinese text submitted over a direct phone connection reaches the Ubuntu desktop correctly |
 | Copy/paste | Earlier Plus text relay | Pasting could still insert older text after a new copy | Newly copied text refreshes for desktop paste; ordinary computer text copy/paste works |
-| UU settings/popups | Earlier Plus management view | Management windows could overlap the desktop image or leave focus in the wrong place | Settings stay separate from the desktop image; closing the management view returns input focus to the desktop |
+| UU settings/popups | Earlier Plus management view | Management windows could overlap the desktop image or leave focus in the wrong place | Settings stay separate from the desktop image; dual-controller focus loss remains unresolved |
 | Clarity/canvas | Plus canvas experiment | Enlarging the tested 4K source added no detail and looked worse | Four presets show the complete desktop and restore the saved size; 4K is the useful maximum for the tested source |
 | Reconnect | Mac UU client update | The Mac UU update called for checking everyday desktop use | Reconnect, direct Chinese input and text paste continue to work after the update; the 4K experience feels similar |
 
@@ -32,7 +40,7 @@ The [comparison](upstream-comparison.md) separates the upstream foundation, newe
 
 [Editable SVG](images/uu-plus-evolution-en.svg)
 
-**Design expectation:** timely text refresh and predictable focus return should reduce repeated paste attempts and interruptions between settings and the desktop. A smaller canvas supplies fewer pixels per frame; visible responsiveness also depends on capture, encoding, network and controller display.
+**Design expectation:** timely text refresh can reduce repeated paste attempts; focus restoration during controller switching still needs verification. A smaller canvas supplies fewer pixels per frame; visible responsiveness also depends on capture, encoding, network and controller display.
 
 ## Canvas pixels and selection
 

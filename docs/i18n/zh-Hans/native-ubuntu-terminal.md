@@ -67,6 +67,23 @@ install -m 0755 scripts/uu-ssh scripts/uu-shell "$HOME/.local/bin/"
 
 `GameViewer/bin/powershell.exe` 只有在不存在或已是本仓库代理时才替换，未知文件拒绝。原生 broker 退出触发整体 UU 服务恢复。控制端打开设备→Terminal→保留 PowerShell→运行 Ubuntu 命令，`exit` 关闭；`cmd` 仍是 Wine 诊断命令处理器。
 
+## 断线后保留终端（可选）
+
+默认 `UURB_TERMINAL_SESSION_MODE=fresh` 每次打开新登录 shell，断开时结束它。安装包含此功能的版本后，可在现有服务环境文件中保存：
+
+```bash
+sed -i '/^UURB_TERMINAL_SESSION_MODE=/d' ~/.config/uu-remote-bridge/environment
+printf '%s\n' 'UURB_TERMINAL_SESSION_MODE=persistent' >> ~/.config/uu-remote-bridge/environment
+```
+
+设置在下一次计划内桥接服务重启时生效；`uu-remote restart` 也会断开桌面连接。仅保存设置不会重启，安装会保留已有值，也不会默认开启持久会话。恢复新会话模式时把上面的 `persistent` 改成 `fresh`，再在计划内重启时应用。
+
+持久模式使用 `/usr/bin/tmux`、独立 socket 和 `main` 工作区，不加载个人 tmux 配置，不复用日常 tmux 服务。所有 UU 终端共享这个工作区、输入和 shell 状态。关闭主控终端只分离客户端；重开回到原 shell、目录与任务。`exit` 或 Ctrl-D 仍结束 shell。桥接服务重启、注销和重启系统不在保留保证内。
+
+## 当前验收 · 2026-10-06
+
+当前源码的真实 Mac UU 关闭／重开保留了同一 shell、目录与后台任务；普通输入、Ctrl-C、尺寸变化和清屏通过。快速批量输入仍有未解决的边界，普通输入通过不能扩大为该情况也通过。参考环境为 Ubuntu 26.04／GNOME 50、Wine 11 和 Windows UU 4.42.0.2770；其他主机／控制端组合需各自验证。
+
 ## 检查与移除
 
 ```bash

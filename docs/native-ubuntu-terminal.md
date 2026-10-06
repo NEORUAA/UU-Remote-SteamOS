@@ -180,6 +180,15 @@ Run the short native-only probe with `python3 scripts/test-terminal-persistence.
 It compiles a helper in a temporary directory and uses only its own tmux socket.
 Actual UU-controller reconnect behavior still requires controller acceptance.
 
+## Current acceptance · 2026-10-06
+
+A real Mac UU close/reopen cycle on the current source retained the same shell,
+working directory and background job in `persistent` mode. Ordinary input,
+Ctrl-C, resize and clear passed. Rapid batch input still has an unresolved
+boundary; the accepted ordinary-input result must not be extended to that case.
+These observations used Ubuntu 26.04 / GNOME 50, Wine 11 and Windows UU
+4.42.0.2770. Other host/controller combinations require their own check.
+
 ## Verification
 
 The isolated test creates a disposable Wine prefix and never touches the

@@ -33,6 +33,24 @@ Der Installer richtet sich an x86-64 Ubuntu 24.04 / GNOME 46 und Ubuntu 26.04 / 
 
 Alle elf Sprachseiten und die technischen Anleitungen beschreiben Plus in der jeweiligen Sprache. Englisch ist die kanonische Referenz.
 
+## Neu in 0.2.0-work
+
+- **Terminal fortsetzen:** optionaler Modus `persistent` behält Shell, Verzeichnis und Jobs beim Wiederverbinden; Standard bleibt `fresh`.
+
+- **Mehrere Dateien empfangen:** reguläre Dateien am Controller kopieren, fertige Gruppe im Ubuntu-Dateimanager einfügen; Fortschritt in empfangenen Bytes.
+
+- **Bildkompatibilität:** Original-PNG plus DIBV5/DIB; ein optionaler Mac-Helfer ergänzt TIFF für PNG.
+
+- **Native Aufnahme erkunden:** optionale CPU/GPU-Prototypen, experimentell und außerhalb der Standardinstallation.
+
+[CPU (MIT)](../vendor/uur-native-cpu/NOTICE) · [GPU (AGPL-3.0)](../vendor/uuway-gpu-component/README.md)
+
+<img src="../docs/images/uu-plus-update-20261006-en.png" alt="Neu in 0.2.0-work" width="1120">
+
+Nur eingehende reguläre Dateien. Aktuelle Ubuntu → Mac-Bildsynchronisierung und Fokusverlust zwischen zwei Controllern bleiben offen.
+
+[Anleitung und Update auf Englisch](../docs/updates/2026-10-06.md) · [SVG](../docs/images/uu-plus-update-20261006-en.svg)
+
 ## Von der Einrichtung zur Fernnutzung
 
 1. Installiere die Bridge auf deinem Ubuntu-Desktop.
@@ -49,7 +67,7 @@ Das ursprüngliche Projekt liefert Desktop-Relay, Tastatur und Maus, Smartphone-
 | Neueres Ubuntu und UU | Ubuntu 26.04 / GNOME 50 und UU 4.42; der Installationsweg für Ubuntu 24.04 bleibt erhalten. |
 | Passende Bildfläche wählen | 720p, 1080p, 1440p und 4K grafisch auswählen. Der gesamte Desktop passt in die Bildfläche; gespeicherte Einstellungen lassen sich wiederherstellen. |
 | Chinesisch, Code und Kopieren/Einfügen | Korrigiert Smartphone-Texteingaben und die Aktualisierung der Zwischenablage. Neuer Text erreicht den Desktop; Code und mehrzeiliger Text behalten ihren Inhalt. |
-| Einstellungen öffnen, verbunden bleiben | Erfasst UU-Verwaltung und Menüs getrennt. Beim Schließen des Viewers kehrt der Eingabefokus zum Desktop-Relay zurück. |
+| Einstellungen öffnen, verbunden bleiben | UU-Verwaltung und Menüs werden getrennt erfasst. Fokusverlust beim Wechsel zwischen zwei Controllern bleibt ungelöst. |
 | Praktischere lokale Werkzeuge | Zugriff auf Qualität, VNC, FreeRDP und Openbox mit Verbesserungen bei Schriften, DPI und Start. |
 | Installation und Wartung | Baut das Relay aus festgelegten Quellen und prüft Komponenten vor der Installation. Stellt fehlgeschlagene Bildflächenänderungen wieder her und zeigt eine Vorschau vor dem Entfernen. |
 

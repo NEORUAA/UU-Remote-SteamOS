@@ -14,6 +14,8 @@
 
 Chọn720p/1080p/1440p/4K theo màn hình/kết nối; chất lượng, FPS yêu cầu, bitrate riêng.
 
+**0.2.0-work · 2026-10-06:** Chỉ nhận tệp thường. Đồng bộ ảnh Ubuntu → Mac hiện tại và tiêu điểm giữa hai bộ điều khiển còn chưa giải quyết. [Cách dùng và cập nhật bằng tiếng Anh](../../updates/2026-10-06.md)
+
 ## Cải thiện hằng ngày
 
 Các cải tiến gần đây tập trung vào nhập tiếng Trung, dán văn bản và thao tác cửa sổ.
@@ -22,7 +24,7 @@ Các cải tiến gần đây tập trung vào nhập tiếng Trung, dán văn b
 | --- | --- | --- | --- |
 | Tiếng Trung trên điện thoại | Nhập điện thoại trong Plus trước đây | Một phần văn bản gửi đi chưa đến desktop đúng cách | Tiếng Trung gửi qua kết nối điện thoại trực tiếp được nhập đúng vào desktop Ubuntu |
 | Sao chép và dán | Trung chuyển văn bản Plus trước đây | Sau khi sao chép mới, nội dung dán vẫn có thể là văn bản cũ | Văn bản mới sao chép được cập nhật để dán trên desktop; sao chép và dán văn bản từ máy tính hoạt động |
-| Cài đặt và cửa sổ UU | Khung quản lý Plus trước đây | Cửa sổ quản lý có thể che desktop hoặc để điểm nhập ở sai chỗ | Cài đặt tách khỏi hình desktop; đóng khung quản lý đưa điểm nhập trở lại desktop |
+| Cài đặt và cửa sổ UU | Khung quản lý Plus trước đây | Cửa sổ quản lý có thể che desktop hoặc để điểm nhập ở sai chỗ | Chụp riêng quản lý UU và menu. Mất tiêu điểm khi đổi hai bộ điều khiển vẫn chưa được giải quyết. |
 | Độ rõ và kích thước | Thử mở rộng khung của Plus | Phóng nguồn 4K đã thử không thêm chi tiết và trông xấu hơn | Bốn mức hiển thị toàn desktop và khôi phục kích thước lưu; nguồn đã thử chỉ cần đến 4K |
 | Kết nối lại | Cập nhật ứng dụng Mac UU | Cần kiểm tra thao tác thường dùng sau khi cập nhật Mac UU | Kết nối lại, nhập tiếng Trung trực tiếp và dán vẫn hoạt động; cảm giác 4K tương tự |
 

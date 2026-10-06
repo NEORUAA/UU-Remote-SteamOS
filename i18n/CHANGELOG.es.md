@@ -6,6 +6,20 @@
 
 Las versiones del puente y del Windows UU aprobado se gestionan por separado.
 
+## Plus 0.2.0-work — 2026-10-06
+
+- **Retoma el terminal:** el modo opcional `persistent` conserva shell, directorio y tareas al reconectar; el valor predeterminado sigue siendo `fresh`.
+
+- **Recibe varios archivos:** copia archivos regulares en el controlador y pega el lote completo en Ubuntu; progreso por bytes recibidos.
+
+- **Compatibilidad de imágenes:** PNG original con DIBV5/DIB; un asistente Mac opcional añade TIFF para PNG.
+
+- **Explora captura nativa:** prototipos CPU/GPU opcionales y experimentales, fuera de la instalación predeterminada.
+
+Solo archivos regulares entrantes. La sincronización actual Ubuntu → Mac y el foco entre dos controladores siguen pendientes.
+
+[CPU (MIT)](../vendor/uur-native-cpu/NOTICE) · [GPU (AGPL-3.0)](../vendor/uuway-gpu-component/README.md) · [Uso y actualización en inglés](../docs/updates/2026-10-06.md)
+
 ## Plus 0.1.0 — 2026-10-03
 
 Plus se basa en el puente original con licencia MIT.

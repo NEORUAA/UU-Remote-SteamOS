@@ -33,6 +33,21 @@ Plus 继续适配新版 Ubuntu 和 UU，提供四档画布设置，修正输入�
 
 十一种语言的首页与技术指南介绍 Plus，可沿同语链接继续阅读；英文版是原始参考。
 
+## 0.2.0-work 更新了什么
+
+这个开发版本增加终端会话保留、多文件接收和图片格式兼容处理，并提供可选的原生捕获实验。
+
+- **终端断线后接着用：**开启 `persistent`，重连回到原来的 Ubuntu shell、目录与任务；安装默认仍为新会话。[开启终端会话保留](../docs/i18n/zh-Hans/native-ubuntu-terminal.md#断线后保留终端可选)。
+- **一次接收多个文件：**在控制端复制普通文件，接收完成后粘贴到 Ubuntu 文件管理器；接收窗口显示文件与整批的实际字节进度。[文件接收说明](../docs/releases/plus-v0.2.0-work.md#incoming-multi-file-copy)。
+- **图片格式兼容：**保留原始 PNG，并提供 DIBV5／DIB；可选 Mac 助手为 PNG 补充 TIFF。[Mac 助手](../docs/macos-clipboard-compat.md)。
+- **原生捕获探索：**提供可选 CPU／GPU 原型，探索 RDP 中继之外的捕获路径，目前仍属实验。[开发指南](../docs/native-video-backends.md)。
+
+<img src="../docs/images/uu-plus-update-20261006-zh-Hans.png" alt="0.2.0-work 特性：终端会话保留、多文件接收与字节进度、图片格式兼容、实验性原生捕获。" width="1120">
+
+文件接收仅支持普通文件入站；当前 Ubuntu → Mac 图片同步与双控制端焦点仍待解决。[已知限制与工作版本说明](../docs/releases/plus-v0.2.0-work.md)。
+
+[更新说明与发布文案](../docs/i18n/zh-Hans/updates/2026-10-06.md) · [可编辑 SVG](../docs/images/uu-plus-update-20261006-zh-Hans.svg)
+
 ## 从安装到远程使用
 
 1. 在 Ubuntu 桌面安装桥接器。
@@ -49,7 +64,7 @@ Plus 继续适配新版 Ubuntu 和 UU，提供四档画布设置，修正输入�
 | 新版 Ubuntu 与 UU | 适配 Ubuntu 26.04 / GNOME 50 和 UU 4.42，保留 Ubuntu 24.04 安装路径。 |
 | 选一块合适的画布 | 在图形界面切换 720p、1080p、1440p 和 4K；完整桌面缩放到所选画布，保存的设置可恢复。 |
 | 中文、代码和复制粘贴 | 修正手机中文提交与剪贴板更新，让新文本及时进入桌面，代码片段和多行文本按原样传递。 |
-| 打开设置，桌面照常在线 | UU 管理窗口与弹窗独立捕获；关闭查看器后，操作焦点回到桌面中继。 |
+| 打开设置，桌面照常在线 | UU 管理窗口与弹窗独立捕获；双主控焦点切换仍在排查。 |
 | 本地工具更顺手 | 提供画质、VNC、FreeRDP 与 Openbox 工具入口，调整工具字体、DPI 和启动行为。 |
 | 安装与维护 | 从固定源码构建中继组件，安装前检查运行组件；画布切换失败可恢复，卸载前可预览变更。 |
 
@@ -150,6 +165,20 @@ uu-remote quality bitrate 0
 `auto` 跟随桌面光标大小，固定值如 `24` 则设置备用光标尺寸。
 使用 `--cursor-guard off` 可关闭。重新安装会让 UU 短暂重连。
 
+## Ubuntu 终端与文件接收
+
+在 UU 主控打开 **终端 → PowerShell**，进入实际 Ubuntu 登录 shell。
+需要重开后保留同一工作区时，可设置 `UURB_TERMINAL_SESSION_MODE=persistent`；
+[终端指南](../docs/i18n/zh-Hans/native-ubuntu-terminal.md)说明如何在计划重连时应用设置，以及用 `exit` 结束会话。
+
+从主控文件管理器复制普通文件，再粘贴到 Ubuntu 文件管理器。
+**UU 文件接收** 显示当前文件与整批的实际字节进度；整批接收完成后才可粘贴。
+失败或取消会清理未完成批次。单文件上限 64 MiB，每批最多 64 个文件、256 MiB。
+已完成的暂存文件需要自行清理，详细边界见[剪贴板说明（英文）](../docs/releases/plus-v0.2.0-work.md#clipboard-images-and-text)。
+
+图片使用单独的兼容路径。[可选 Mac PNG 助手（英文）](../docs/macos-clipboard-compat.md)
+保留 PNG 并添加 TIFF，是需要主动开启的本机应用；它不是 UU 内置功能，也不代表当前所有图片路径均已通过。
+
 ## 日常使用与维护
 
 ```bash
@@ -194,6 +223,7 @@ uu-remote stop
 
 ## 技术文档与贡献
 
+- [开发更新](../docs/i18n/zh-Hans/updates/2026-10-06.md)、[原生终端](../docs/i18n/zh-Hans/native-ubuntu-terminal.md)与 [Mac 图片兼容（英文）](../docs/macos-clipboard-compat.md)
 - [画质与分辨率](../docs/i18n/zh-Hans/quality-guide.md)
 - [源码构建](../docs/i18n/zh-Hans/source-build.md)与[Ubuntu 26.04 适配](../docs/i18n/zh-Hans/ubuntu-26.04-port.md)
 - [架构](../docs/i18n/zh-Hans/architecture.md)与[安全说明](../docs/i18n/zh-Hans/security.md)
@@ -237,3 +267,5 @@ UU 和 Ubuntu 都在更新，Plus 也会接着跟进。你的支持会用来测�
 UU 远程及其他依赖保留各自许可证和商标。本项目由独立社区维护。
 
 支付品牌图标来自 [Simple Icons](https://simpleicons.org/)（CC0）；第三方品牌保留其商标权利。
+
+可选 GPU 采集组件另附 [AGPL-3.0 许可证与源码说明](../vendor/uuway-gpu-component/README.md)；MIT CPU 适配器保留[独立署名](../vendor/uur-native-cpu/NOTICE)。这些原型不进入默认安装。

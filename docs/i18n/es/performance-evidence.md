@@ -14,6 +14,8 @@
 
 Elija 720p/1080p/1440p/4K según pantalla y conexión; calidad UU, FPS solicitados y bitrate son independientes.
 
+**0.2.0-work · 2026-10-06:** Solo archivos regulares entrantes. La sincronización actual Ubuntu → Mac y el foco entre dos controladores siguen pendientes. [Uso y actualización en inglés](../../updates/2026-10-06.md)
+
 ## Mejoras cotidianas
 
 Las mejoras recientes se centran en la entrada de chino, el pegado de texto y el manejo de ventanas.
@@ -22,7 +24,7 @@ Las mejoras recientes se centran en la entrada de chino, el pegado de texto y el
 | --- | --- | --- | --- |
 | Chino desde el teléfono | Entrada móvil anterior en Plus | Parte del texto enviado no llegaba correctamente al escritorio | El chino enviado por conexión directa del teléfono llega correctamente al escritorio Ubuntu |
 | Copiar y pegar | Relay de texto anterior en Plus | Después de copiar texto nuevo, todavía podía pegarse contenido anterior | El texto recién copiado se actualiza para pegarlo en el escritorio; copiar y pegar texto desde el ordenador funciona |
-| Ajustes y ventanas de UU | Vista de gestión anterior en Plus | La gestión podía superponerse al escritorio o dejar el foco en otro lugar | Los ajustes quedan separados de la imagen del escritorio; cerrar la vista de gestión devuelve el foco al escritorio |
+| Ajustes y ventanas de UU | Vista de gestión anterior en Plus | La gestión podía superponerse al escritorio o dejar el foco en otro lugar | La gestión UU y sus menús se capturan por separado. La pérdida de foco al cambiar entre dos controladores sigue sin resolverse. |
 | Nitidez y tamaño | Prueba de ampliación del lienzo de Plus | Ampliar la fuente 4K probada no añadía detalle y empeoraba la imagen | Cuatro perfiles muestran todo el escritorio y recuperan el tamaño guardado; 4K es suficiente para la fuente probada |
 | Reconexión | Actualización del cliente Mac UU | La actualización de Mac UU requería revisar el uso cotidiano | La reconexión, el chino directo y el pegado siguen funcionando; la experiencia 4K se siente similar |
 

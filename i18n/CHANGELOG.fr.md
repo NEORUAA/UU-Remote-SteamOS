@@ -6,6 +6,20 @@
 
 Versions du pont et Windows UU approuvé sont distinctes.
 
+## Plus 0.2.0-work — 2026-10-06
+
+- **Reprendre le terminal :** le mode optionnel `persistent` conserve shell, répertoire et tâches à la reconnexion ; défaut : `fresh`.
+
+- **Recevoir plusieurs fichiers :** copiez des fichiers ordinaires côté contrôleur, puis collez le lot complet dans Ubuntu ; progression en octets reçus.
+
+- **Compatibilité des images :** PNG original avec DIBV5/DIB ; un compagnon Mac optionnel ajoute TIFF pour PNG.
+
+- **Explorer la capture native :** prototypes CPU/GPU optionnels et expérimentaux, hors installation par défaut.
+
+Fichiers ordinaires entrants uniquement. La synchronisation actuelle Ubuntu → Mac et le focus entre deux contrôleurs restent ouverts.
+
+[CPU (MIT)](../vendor/uur-native-cpu/NOTICE) · [GPU (AGPL-3.0)](../vendor/uuway-gpu-component/README.md) · [Utilisation et mise à jour en anglais](../docs/updates/2026-10-06.md)
+
 ## Plus 0.1.0 — 2026-10-03
 
 Plus repose sur le pont amont sous licence MIT.

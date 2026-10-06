@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1774" height="1120" viewBox="0 0 1774 1120" role="img" aria-labelledby="title desc">
+<title id="title">终端接着用，文件一次收，兼容继续提升。</title>
+<desc id="desc">0.2.0-work 功能更新 · 2026 年 10 月 6 日. 已知限制：出站文件与目录复制尚未实现。</desc>
+<rect width="1774" height="1120" fill="#fbf7f0"/>
+<g font-family="Noto Sans, Noto Sans CJK SC, sans-serif">
+<text x="72" y="53" font-size="20" font-weight="700" fill="#686976">UU REMOTE  /  UBUNTU PLUS</text>
+<text x="72" y="130" font-size="58" font-weight="700" fill="#20212a">终端接着用，文件一次收，兼容继续提升。</text>
+<rect x="72" y="167" width="68" height="7" rx="3" fill="#ef5b24"/>
+<text x="166" y="190" font-size="28" font-weight="400" fill="#686976">0.2.0-work 功能更新 · 2026 年 10 月 6 日</text>
+<rect x="72" y="234" width="801" height="301" rx="24" fill="#fffefa" stroke="#e6ded6"/>
+<rect x="72" y="259" width="5" height="45" rx="2" fill="#087f85"/>
+<text x="100" y="283" font-size="29" font-weight="700" fill="#20212a">Ubuntu 终端</text>
+<rect x="745.0" y="258" width="104.0" height="33" rx="16" fill="#087f85" opacity="0.11"/>
+<text x="761.0" y="281" font-size="18" font-weight="700" fill="#087f85">可选开启</text>
+<text x="100" y="346" font-size="35" font-weight="700" fill="#087f85">断线重连，回到原工作区</text>
+<text x="100" y="396" font-size="25" font-weight="400" fill="#20212a">保留 shell、工作目录与后台任务。</text>
+<text x="100" y="430" font-size="25" font-weight="400" fill="#20212a">按终端指南开启 persistent 模式。</text>
+<text x="100" y="464" font-size="25" font-weight="400" fill="#20212a">安装默认仍为新会话。</text>
+<rect x="901" y="234" width="801" height="301" rx="24" fill="#fffefa" stroke="#e6ded6"/>
+<rect x="901" y="259" width="5" height="45" rx="2" fill="#087f85"/>
+<text x="929" y="283" font-size="29" font-weight="700" fill="#20212a">多文件接收</text>
+<rect x="1574.0" y="258" width="104.0" height="33" rx="16" fill="#087f85" opacity="0.11"/>
+<text x="1590.0" y="281" font-size="18" font-weight="700" fill="#087f85">入站文件</text>
+<text x="929" y="346" font-size="35" font-weight="700" fill="#087f85">多个文件，一次复制接收</text>
+<text x="929" y="396" font-size="25" font-weight="400" fill="#20212a">从控制端复制普通文件到 Ubuntu。</text>
+<text x="929" y="430" font-size="25" font-weight="400" fill="#20212a">窗口显示文件与整批的实际字节进度。</text>
+<text x="929" y="464" font-size="25" font-weight="400" fill="#20212a">接收完成后粘贴到文件管理器。</text>
+<rect x="72" y="562" width="801" height="301" rx="24" fill="#fffefa" stroke="#e6ded6"/>
+<rect x="72" y="587" width="5" height="45" rx="2" fill="#c76520"/>
+<text x="100" y="611" font-size="29" font-weight="700" fill="#20212a">图片格式兼容</text>
+<rect x="745.0" y="586" width="104.0" height="33" rx="16" fill="#c76520" opacity="0.11"/>
+<text x="761.0" y="609" font-size="18" font-weight="700" fill="#c76520">可选助手</text>
+<text x="100" y="674" font-size="35" font-weight="700" fill="#c76520">保留原始 PNG，补充兼容格式</text>
+<text x="100" y="724" font-size="25" font-weight="400" fill="#20212a">同时提供 PNG 与 DIBV5／DIB 格式。</text>
+<text x="100" y="758" font-size="25" font-weight="400" fill="#20212a">可选 Mac 助手为 PNG 复制补充 TIFF。</text>
+<text x="100" y="792" font-size="25" font-weight="400" fill="#20212a">当前 Ubuntu → Mac 图片同步仍待解决。</text>
+<rect x="901" y="562" width="801" height="301" rx="24" fill="#fffefa" stroke="#e6ded6"/>
+<rect x="901" y="587" width="5" height="45" rx="2" fill="#7954c9"/>
+<text x="929" y="611" font-size="29" font-weight="700" fill="#20212a">原生 CPU／GPU 捕获</text>
+<rect x="1574.0" y="586" width="104.0" height="33" rx="16" fill="#7954c9" opacity="0.11"/>
+<text x="1590.0" y="609" font-size="18" font-weight="700" fill="#7954c9">实验阶段</text>
+<text x="929" y="674" font-size="35" font-weight="700" fill="#7954c9">探索另一条桌面捕获路径</text>
+<text x="929" y="724" font-size="25" font-weight="400" fill="#20212a">面向开发者的可选原生捕获原型。</text>
+<text x="929" y="758" font-size="25" font-weight="400" fill="#20212a">不包含在默认安装中。</text>
+<text x="929" y="792" font-size="25" font-weight="400" fill="#20212a">CPU：MIT · 独立 GPU 组件：AGPL-3.0。</text>
+<rect x="72" y="900" width="1630" height="141" rx="24" fill="#f4e8d8"/>
+<text x="100" y="942" font-size="29" font-weight="700" fill="#c76520">已知限制：出站文件与目录复制尚未实现。</text>
+<text x="100" y="981" font-size="25" font-weight="400" fill="#20212a">双控制端焦点丢失仍待解决，详见工作版本说明。</text>
+<text x="100" y="1013" font-size="25" font-weight="400" fill="#20212a">继续提供 720p · 1080p · 1440p · 4K 四档画布。</text>
+<text x="72" y="1084" font-size="20" font-weight="400" fill="#686976">开发源码更新 · 可选功能附使用指南 · 原生捕获仍属实验。</text>
+</g>
+</svg>

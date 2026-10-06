@@ -6,6 +6,20 @@
 
 Bridge-Tags und genehmigte Windows-UU-Version sind getrennt.
 
+## Plus 0.2.0-work — 2026-10-06
+
+- **Terminal fortsetzen:** optionaler Modus `persistent` behält Shell, Verzeichnis und Jobs beim Wiederverbinden; Standard bleibt `fresh`.
+
+- **Mehrere Dateien empfangen:** reguläre Dateien am Controller kopieren, fertige Gruppe im Ubuntu-Dateimanager einfügen; Fortschritt in empfangenen Bytes.
+
+- **Bildkompatibilität:** Original-PNG plus DIBV5/DIB; ein optionaler Mac-Helfer ergänzt TIFF für PNG.
+
+- **Native Aufnahme erkunden:** optionale CPU/GPU-Prototypen, experimentell und außerhalb der Standardinstallation.
+
+Nur eingehende reguläre Dateien. Aktuelle Ubuntu → Mac-Bildsynchronisierung und Fokusverlust zwischen zwei Controllern bleiben offen.
+
+[CPU (MIT)](../vendor/uur-native-cpu/NOTICE) · [GPU (AGPL-3.0)](../vendor/uuway-gpu-component/README.md) · [Anleitung und Update auf Englisch](../docs/updates/2026-10-06.md)
+
 ## Plus 0.1.0 — 2026-10-03
 
 Plus baut auf der MIT-lizenzierten Upstream-Bridge auf.
