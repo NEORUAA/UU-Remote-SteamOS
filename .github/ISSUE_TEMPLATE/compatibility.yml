@@ -6,10 +6,10 @@ body:
   - type: markdown
     attributes:
       value: |
-        Tell us about your Ubuntu host, controller and the steps you tried.
+        Tell us about your SteamOS host, controller and the steps you tried.
         Before submitting this public report, remove account/device identifiers and private data.
 
-        欢迎分享 Ubuntu 主机、控制端环境和操作步骤。
+        欢迎分享 SteamOS 主机、控制端环境和操作步骤。
         内容会公开，提交前请去掉账号、设备标识和私人数据。
 
   - type: dropdown
@@ -28,9 +28,9 @@ body:
   - type: input
     id: host
     attributes:
-      label: "Ubuntu host / Ubuntu 主机"
-      description: "Give Ubuntu release, desktop version, session type and CPU architecture. / 填写 Ubuntu、桌面版本、会话类型和 CPU 架构。"
-      placeholder: "Ubuntu 24.04; GNOME 46; Wayland, Xorg, or XRDP; x86-64"
+      label: "SteamOS host / SteamOS 主机"
+      description: "Give SteamOS release, Plasma and Proton versions, session type and CPU architecture. / 填写 SteamOS、Plasma、Proton 版本、会话类型和 CPU 架构。"
+      placeholder: "SteamOS 3.8.28; Plasma 6.4.3; Proton 11.0; Wayland; x86-64"
     validations:
       required: true
 

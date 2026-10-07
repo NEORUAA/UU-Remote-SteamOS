@@ -1,0 +1,419 @@
+#!/usr/bin/env python3
+"""Portable SteamOS runtime with a single writable installation root."""
+import argparse
+import hashlib
+import json
+import os
+import pwd
+import re
+from pathlib import Path
+import resource
+import shutil
+import signal
+import socket
+import subprocess
+import sys
+import time
+
+def user_home():
+    return Path(pwd.getpwuid(os.getuid()).pw_dir)
+
+
+def default_root():
+    override = os.environ.get('UURB_STEAMOS_ROOT')
+    if override:
+        return Path(override)
+    project = Path(__file__).resolve().parents[1]
+    if project.name == 'project':
+        return project.parent
+    return user_home() / '.local/share/uu-remote-steamos'
+
+
+def steam_installation(explicit=None):
+    if explicit:
+        candidates = [Path(explicit)]
+    else:
+        home = user_home()
+        candidates = [home / '.local/share/Steam', home / '.steam/steam', home / '.steam/root']
+    for candidate in candidates:
+        if (candidate / 'steamapps').is_dir():
+            return candidate.resolve()
+    raise SystemExit('Steam installation not found; use --steam /path/to/Steam.')
+
+
+def discover_proton(steam):
+    libraries = [steam]
+    listing = steam / 'steamapps/libraryfolders.vdf'
+    if listing.is_file():
+        for value in re.findall(r'"path"\s+"((?:\\.|[^"\\])*)"', listing.read_text()):
+            libraries.append(Path(value.replace('\\\\', '\\').replace('\\"', '"')))
+    candidates = []
+    for library in libraries:
+        candidates.extend((library / 'steamapps/common').glob('Proton*/proton'))
+    # Prefer an installed stable official release; custom tools remain explicit.
+    def priority(path):
+        version = re.fullmatch(r'Proton (\d+)(?:\.(\d+))?', path.parent.name)
+        return (bool(version), tuple(map(int, version.groups(default='0'))) if version else (0, 0))
+    for candidate in sorted(dict.fromkeys(candidates), key=priority, reverse=True):
+        if (candidate.parent / 'files/bin/wineserver').is_file():
+            return candidate.resolve()
+    raise SystemExit('No installed Steam Proton found; install Proton through Steam or use --proton.')
+
+
+def prepare_proton(root, source):
+    # Proton opens dist.lock beside its launcher, even for an installed runtime.
+    # Mirror only launcher metadata; reuse Steam's large immutable files tree.
+    if not source.is_file() or not (source.parent / 'files/bin/wineserver').is_file():
+        raise SystemExit(f'Invalid Proton installation: {source}')
+    identity = hashlib.sha256(str(source.resolve()).encode()).hexdigest()[:12]
+    destination = root / f'tools/proton-{identity}'
+    destination.mkdir(exist_ok=True)
+    for name in ('proton', 'filelock.py', 'version', 'proton_3.7_tracked_files'):
+        target = destination / name
+        if target.is_symlink():
+            raise SystemExit(f'Refusing symlinked Proton metadata: {target}')
+        if (source.parent / name).is_file():
+            shutil.copy2(source.parent / name, target)
+    files = destination / 'files'
+    expected = source.parent / 'files'
+    if files.is_symlink() and files.resolve() != expected.resolve():
+        raise SystemExit('The portable Proton runtime points to another distribution.')
+    if not files.exists():
+        files.symlink_to(expected, target_is_directory=True)
+    return destination / 'proton'
+
+
+def session_environment():
+    runtime = Path(f'/run/user/{os.getuid()}')
+    generated = runtime / 'gamescope-environment'
+    if generated.is_file():
+        values = dict(line.split('=', 1) for line in generated.read_text().splitlines()
+                      if '=' in line)
+        wayland = values.get('GAMESCOPE_WAYLAND_DISPLAY', 'gamescope-0')
+        if (runtime / wayland).is_socket() and (runtime / f'{wayland}-ei').is_socket():
+            # This is session metadata, not shell code to source.
+            allowed = ('DISPLAY', 'XAUTHORITY', 'XDG_RUNTIME_DIR',
+                       'DBUS_SESSION_BUS_ADDRESS', 'GAMESCOPE_WAYLAND_DISPLAY')
+            return {**{key: values[key] for key in allowed if key in values},
+                    'UURB_SESSION_KIND': 'gamescope', 'WAYLAND_DISPLAY': wayland}
+    for proc in Path('/proc').iterdir():
+        try:
+            if proc.stat().st_uid != os.getuid():
+                continue
+            if (proc / 'comm').read_text().strip() not in ('kwin_wayland', 'plasmashell'):
+                continue
+            return dict(item.split('=', 1) for item in
+                        (proc / 'environ').read_text().split('\0') if '=' in item)
+        except (OSError, ValueError):
+            continue
+    raise SystemExit('A logged-in Plasma Wayland or SteamOS gamescope session is required.')
+
+
+def environment(root, proton, steam=None, settings=None):
+    session = session_environment()
+    runtime = session.get('XDG_RUNTIME_DIR', f'/run/user/{os.getuid()}')
+    env = dict(os.environ)
+    for key in ('LD_PRELOAD', 'LD_LIBRARY_PATH', 'PYTHONPATH', 'WINEPREFIX',
+                'STEAM_COMPAT_CONFIG', 'WAYLAND_DISPLAY', 'DISPLAY'):
+        env.pop(key, None)
+    env.update(HOME=str(root / 'home'), XDG_CONFIG_HOME=str(root / 'config'),
+               XDG_CACHE_HOME=str(root / 'cache'), XDG_DATA_HOME=str(root / 'data'),
+               XDG_STATE_HOME=str(root / 'state'), XDG_RUNTIME_DIR=str(root / 'runtime'),
+               TMPDIR=str(root / 'tmp'), TMP=str(root / 'tmp'), TEMP=str(root / 'tmp'),
+               PYTHONDONTWRITEBYTECODE='1',
+               DBUS_SESSION_BUS_ADDRESS='unix:path=/nonexistent',
+               DISPLAY=session.get('DISPLAY', ':0'),
+               XAUTHORITY=session.get('XAUTHORITY', ''),
+               WAYLAND_DISPLAY=str(Path(runtime) / session.get('WAYLAND_DISPLAY', 'wayland-0')),
+               PIPEWIRE_REMOTE=str(Path(runtime) / 'pipewire-0'),
+               PULSE_SERVER=f'unix:{runtime}/pulse/native',
+               STEAM_COMPAT_CLIENT_INSTALL_PATH=str(steam or user_home() / '.local/share/Steam'),
+               STEAM_COMPAT_DATA_PATH=str(root / 'compatdata'),
+               STEAM_COMPAT_SHADER_PATH=str(root / 'cache/shaders'),
+               STEAM_COMPAT_INSTALL_PATH=str(root),
+               WINEPREFIX=str(root / 'compatdata/pfx'),
+               SteamAppId='0', SteamGameId='0', STEAM_COMPAT_APP_ID='0',
+               PROTON_LOG_DIR=str(root / 'logs'), WINEDEBUG='-all',
+               PROTON_CRASH_REPORT_DIR=str(root / 'logs'),
+               DXVK_LOG_PATH=str(root / 'logs'), DXVK_LOG_LEVEL='none',
+               DXVK_STATE_CACHE_PATH=str(root / 'cache'),
+               VKD3D_SHADER_CACHE_PATH=str(root / 'cache'),
+               PROTON_NO_ESYNC='1', PROTON_NO_FSYNC='1', PROTON_USE_XALIA='0',
+               MESA_SHADER_CACHE_DIR=str(root / 'cache/mesa'),
+               __GL_SHADER_DISK_CACHE_PATH=str(root / 'cache/nvidia'),
+               WINEDLLOVERRIDES='winebth.sys=d;winedbg.exe=d;mscoree,mshtml=',
+               UURB_STEAMOS_ROOT=str(root), UURB_PROTON=str(proton))
+    env.update(UURB_SESSION_KIND=session.get('UURB_SESSION_KIND', 'plasma'),
+               UURB_HOST_RUNTIME=runtime,
+               UURB_HOST_DISPLAY=session.get('DISPLAY', ':0'),
+               UURB_GAMESCOPE_EIS=str(Path(runtime) / (session.get('WAYLAND_DISPLAY', 'gamescope-0') + '-ei')),
+               GST_REGISTRY=str(root / 'cache/gst-registry.bin'))
+    env['UURB_HOST_DISPLAYS'] = ','.join(dict.fromkeys([env['DISPLAY'],
+        *(':' + path.name[1:] for path in Path('/tmp/.X11-unix').glob('X*')
+          if path.name[1:].isdecimal() and path.is_socket())]))
+    settings = settings or {}
+    env.update(UURB_RESOLUTION=settings.get('resolution', '1280x800'),
+               UURB_MONITOR=str(settings.get('monitor', 0)),
+               UURB_RDP_PORT=str(settings.get('rdp_port', 3399)),
+               UURB_PRIVATE_DISPLAY=str(settings.get('private_display', 20)))
+    return env
+
+
+def sandbox(root, command, env, desktop_socket=True):
+    # No writable host home, Steam installation, system paths or host /tmp.
+    # Wine clients sharing a prefix must share the host PID namespace: the
+    # wineserver protocol passes Unix PIDs between independently started tools.
+    args = ['bwrap', '--die-with-parent', '--new-session',
+            '--ro-bind', '/', '/', '--bind', str(root), str(root),
+            '--bind', str(root / 'tmp'), '/tmp', '--dev', '/dev',
+            '--bind', str(root / 'shm'), '/dev/shm', '--proc', '/proc']
+    if Path('/dev/dri').exists():
+        args += ['--dev-bind', '/dev/dri', '/dev/dri']
+    if Path('/dev/input').exists():
+        # Steam Input's virtual Xbox pad is hot-plugged under /dev/input.
+        # Keeping this directory visible lets Proton's SDL/Wine HID bus see it.
+        args += ['--dev-bind', '/dev/input', '/dev/input']
+    # Reuse only the existing desktop X socket; private X sockets live in root/tmp.
+    session_display = env.get('DISPLAY', ':0').split('.')[0].lstrip(':')
+    socket = Path('/tmp/.X11-unix') / f'X{session_display}'
+    if desktop_socket and socket.exists():
+        (root / 'tmp/.X11-unix').mkdir(exist_ok=True)
+        args += ['--ro-bind', str(socket), str(socket)]
+    if desktop_socket and env.get('UURB_SESSION_KIND') == 'gamescope':
+        # Steam assigns non-Steam applications to its secondary Xwayland.
+        for candidate in Path('/tmp/.X11-unix').glob('X*'):
+            if candidate != socket and candidate.is_socket():
+                args += ['--ro-bind', str(candidate), str(candidate)]
+    args += ['--chdir', str(root), '--', '/usr/bin/python3', '-B',
+             str(Path(__file__).resolve()), '--root', str(root), '_exec', *command]
+    return subprocess.run(args, env=env).returncode
+
+
+def control(root, action):
+    with socket.socket(socket.AF_UNIX) as client:
+        client.settimeout(50)
+        client.connect(str(root / 'runtime/control.sock'))
+        client.sendall(action.encode())
+        response = client.recv(4096).decode()
+        print(response, end='')
+        return 1 if 'error:' in response.lower() else 0
+
+
+def session_alive(root):
+    try:
+        with socket.socket(socket.AF_UNIX) as client:
+            client.settimeout(1)
+            client.connect(str(root / 'runtime/control.sock'))
+            client.sendall(b'ping')
+            return client.recv(128) == b'Portable session is running.\n'
+    except OSError:
+        return False
+
+
+def start_worker(root, source):
+    # A transient user unit outlives SSH login scopes; no unit file is installed.
+    desktop = session_environment()
+    selected_env = dict(os.environ)
+    for name in ('LD_PRELOAD', 'LD_LIBRARY_PATH', 'PYTHONPATH'):
+        selected_env.pop(name, None)
+    selected_env.update(XDG_RUNTIME_DIR=desktop.get('XDG_RUNTIME_DIR', f'/run/user/{os.getuid()}'),
+        DBUS_SESSION_BUS_ADDRESS=desktop.get('DBUS_SESSION_BUS_ADDRESS',
+                                            f'unix:path=/run/user/{os.getuid()}/bus'))
+    unit = 'uu-remote-' + hashlib.sha256(str(root).encode()).hexdigest()[:12] + f'-{time.time_ns():x}'
+    subprocess.run(['systemd-run', '--user', '--quiet', '--collect', '--service-type=exec',
+        '--unit', unit, '--property', f'WorkingDirectory={root}',
+        '--property', f'StandardOutput=append:{root}/logs/session.log',
+        '--property', 'StandardError=inherit', '--property', 'KillMode=mixed',
+        '--', sys.executable, '-B', str(Path(__file__).resolve()),
+        '--root', str(root), '--proton', str(source), 'serve'], env=selected_env, check=True)
+    pid = int(subprocess.run(['systemctl', '--user', 'show', unit, '-p', 'MainPID', '--value'],
+                            env=selected_env, check=True, stdout=subprocess.PIPE, text=True).stdout)
+    record = {'pid': pid, 'start': Path(f'/proc/{pid}/stat').read_text()
+              .rsplit(')', 1)[1].split()[19]}
+    (root / 'runtime/process.json').write_text(json.dumps(record))
+
+
+def process_matches(record, script):
+    try:
+        process = Path('/proc') / str(record['pid'])
+        return (process.stat().st_uid == os.getuid()
+                and process.joinpath('stat').read_text().rsplit(')', 1)[1].split()[19]
+                == record['start']
+                and str(script).encode() in process.joinpath('cmdline').read_bytes())
+    except (OSError, KeyError, ValueError):
+        return False
+
+
+def check_dependencies(kind='plasma'):
+    required = ('bwrap', 'xdotool', 'xprop', 'xauth', 'systemd-run',
+                'openssl', 'ffmpeg', 'tar', 'pacman')
+    required += ('gst-launch-1.0',) if kind == 'gamescope' else ('krdpserver', 'xfreerdp3')
+    missing = [name for name in required if not shutil.which(name)]
+    if missing:
+        raise SystemExit('Missing SteamOS desktop tools: ' + ', '.join(missing))
+    if kind == 'gamescope':
+        return
+    version = subprocess.run(['pacman', '-Q', 'krdp'], check=True,
+                             stdout=subprocess.PIPE, text=True).stdout.strip()
+    if not version.startswith('krdp 6.4.3-'):
+        raise SystemExit(f'KRDP input corrections require reviewed 6.4.3; found {version}.')
+
+
+def main():
+    os.umask(0o077)
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--root', type=Path, default=default_root())
+    parser.add_argument('--proton', type=Path)
+    parser.add_argument('--steam', type=Path)
+    parser.add_argument('--resolution', choices=['1280x800', '1280x720', '1920x1080', '2560x1440', '3840x2160'])
+    parser.add_argument('--monitor', type=int)
+    parser.add_argument('--rdp-port', type=int)
+    parser.add_argument('--private-display', type=int)
+    parser.add_argument('action', choices=['doctor', 'setup', 'start', 'serve', 'stop',
+                         'open', 'status', 'screenshot', 'prune', 'sandbox', 'proton', '_exec'])
+    parser.add_argument('args', nargs=argparse.REMAINDER)
+    options = parser.parse_args()
+    if options.action == '_exec':
+        resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
+        os.execvpe(options.args[0], options.args, os.environ)
+    root = options.root.expanduser().absolute()
+    if root.resolve() != root or root == Path('/'):
+        raise SystemExit('Installation root must be a real absolute directory, not a symlink.')
+    for name in ('home', 'config', 'cache', 'data', 'state', 'runtime', 'tmp',
+                 'shm', 'logs', 'downloads', 'tools', 'compatdata'):
+        directory = root / name
+        if directory.is_symlink():
+            raise SystemExit(f'Refusing symlinked writable directory: {directory}')
+        directory.mkdir(parents=True, exist_ok=True, mode=0o700)
+    configuration = root / 'config/settings.json'
+    settings = json.loads(configuration.read_text()) if configuration.exists() else {}
+    for field in ('resolution', 'monitor', 'rdp_port', 'private_display'):
+        value = getattr(options, field)
+        if value is not None:
+            settings[field] = value
+    if not 1024 <= settings.get('rdp_port', 3399) <= 65535 or not 1 <= settings.get('private_display', 20) <= 99 or settings.get('monitor', 0) < 0:
+        raise SystemExit('Require RDP port 1024..65535, private display 1..99 and monitor >= 0.')
+    steam = steam_installation(options.steam or settings.get('steam'))
+    source = options.proton or (Path(settings['proton']) if settings.get('proton') else discover_proton(steam))
+    source = source.expanduser().absolute()
+    proton = prepare_proton(root, source)
+    settings.update(proton=str(source.resolve()), steam=str(steam))
+    if options.action in ('setup', 'start', 'serve', 'open'):
+        configuration.write_text(json.dumps(settings, indent=2) + '\n')
+    env = environment(root, proton, steam, settings)
+    if options.action in ('doctor', 'setup', 'start', 'serve', 'open'):
+        check_dependencies(env['UURB_SESSION_KIND'])
+    session = Path(__file__).with_name('uu-steamos-session.py').resolve()
+    if options.action in ('start', 'open') and session_alive(root):
+        status_path = root / 'runtime/status.json'
+        previous = json.loads(status_path.read_text()) if status_path.exists() else {}
+        kind = previous.get('session_kind', 'gamescope' if previous.get('relay', '').startswith('gamescope') else 'plasma')
+        if kind != env['UURB_SESSION_KIND']:
+            subprocess.run([sys.executable, '-B', str(Path(__file__).resolve()),
+                            '--root', str(root), 'stop'], check=True)
+    if options.action == 'status':
+        status = root / 'runtime/status.json'
+        value = json.loads(status.read_text()) if status.exists() else {'state': 'not-started'}
+        if value.get('state') == 'ready' and not session_alive(root):
+            supervisor = root / 'runtime/supervisor.json'
+            alive = supervisor.exists() and process_matches(json.loads(supervisor.read_text()), session)
+            value.update(state='busy' if alive else 'stopped',
+                         reason='The control socket is not currently responding.')
+        print(json.dumps(value, indent=2))
+        return 0
+    if options.action in ('open', 'screenshot'):
+        if options.action == 'open' and not session_alive(root):
+            subprocess.run([sys.executable, '-B', str(Path(__file__).resolve()),
+                            '--root', str(root), '--proton', str(source), 'start'], check=True)
+            deadline = time.monotonic() + 60
+            while not session_alive(root):
+                status_file = root / 'runtime/status.json'
+                if status_file.exists() and json.loads(status_file.read_text()).get('state') == 'failed':
+                    raise SystemExit(status_file.read_text())
+                if time.monotonic() >= deadline:
+                    raise SystemExit(f'Session did not start; see {root}/logs/session.log')
+                time.sleep(0.25)
+        action = options.action
+        if action == 'open':
+            context = {'appid': os.environ.get('SteamAppId', '0'),
+                       'gameid': os.environ.get('SteamGameId', '0'),
+                       'display': os.environ.get('DISPLAY', env['DISPLAY'])}
+            action = 'open ' + json.dumps(context)
+        result = control(root, action)
+        if options.action == 'open' and env['UURB_SESSION_KIND'] == 'gamescope' and os.environ.get('SteamAppId', '0') != '0' and result == 0:
+            # Keep Steam's foreground application scope alive while its window
+            # exists. The backend lives in a separate transient user unit.
+            while session_alive(root):
+                try:
+                    with socket.socket(socket.AF_UNIX) as client:
+                        client.settimeout(3)
+                        client.connect(str(root / 'runtime/control.sock'))
+                        client.sendall(b'visible')
+                        if client.recv(32) != b'yes\n':
+                            break
+                except OSError:
+                    break  # The backend may be stopped between health probes.
+                time.sleep(1)
+        return result
+    if options.action == 'stop':
+        try:
+            result = control(root, 'stop')
+            deadline = time.monotonic() + 30
+            while (root / 'runtime/control.sock').exists() and time.monotonic() < deadline:
+                time.sleep(0.1)
+            process_file = root / 'runtime/process.json'
+            if process_file.exists():
+                record = json.loads(process_file.read_text())
+                while process_matches(record, Path(__file__).resolve()) and time.monotonic() < deadline:
+                    time.sleep(0.1)
+            return result
+        except (OSError, socket.timeout):
+            for filename, script in [('supervisor.json', session),
+                                     ('process.json', Path(__file__).resolve())]:
+                process_file = root / 'runtime' / filename
+                if process_file.exists():
+                    record = json.loads(process_file.read_text())
+                    if process_matches(record, script):
+                        os.kill(record['pid'], signal.SIGTERM)
+                        print('Requested shutdown of the portable session process.')
+                        return 0
+            print('No portable session is running.')
+            return 0
+    if options.action == 'start':
+        if session_alive(root):
+            print('Portable session is already running; use status or open.')
+            return 0
+        process_file = root / 'runtime/process.json'
+        if process_file.exists() and process_matches(json.loads(process_file.read_text()),
+                                                     Path(__file__).resolve()):
+            print('Portable session is starting; use status or logs/session.log.')
+            return 0
+        (root / 'runtime/control.sock').unlink(missing_ok=True)
+        (root / 'runtime/status.json').write_text('{"state": "starting"}\n')
+        start_worker(root, source)
+        print(f'Started portable session; see {root}/logs/session.log')
+        return 0
+    if options.action == 'serve':
+        return sandbox(root, ['/usr/bin/python3', '-B', str(session)], env)
+    if options.action == 'setup':
+        setup = Path(__file__).with_name('setup-steamos.py').resolve()
+        return sandbox(root, ['/usr/bin/python3', '-B', str(setup)], env)
+    if options.action == 'prune':
+        cleanup = Path(__file__).with_name('prune-steamos.py').resolve()
+        return sandbox(root, ['/usr/bin/python3', '-B', str(cleanup)], env, desktop_socket=False)
+    if options.action == 'doctor':
+        print(json.dumps({key: env[key] for key in ('UURB_STEAMOS_ROOT', 'UURB_PROTON',
+              'DISPLAY', 'WAYLAND_DISPLAY', 'WINEPREFIX', 'HOME', 'XDG_RUNTIME_DIR')}, indent=2))
+        return sandbox(root, ['/bin/true'], env)
+    command = options.args
+    if command and command[0] == '--':
+        command = command[1:]
+    if options.action == 'proton':
+        command = [str(proton), 'runinprefix', *command]
+    if not command:
+        raise SystemExit('A command is required.')
+    return sandbox(root, command, env)
+
+
+if __name__ == '__main__':
+    sys.exit(main())

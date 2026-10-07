@@ -27,6 +27,43 @@ static UINT fallback_cursor_height;
 static HANDLE log_file = INVALID_HANDLE_VALUE;
 static SRWLOCK log_lock = SRWLOCK_INIT;
 static volatile LONG hidden_cursor_count;
+static wchar_t native_cursor_path[MAX_PATH];
+static SRWLOCK native_cursor_lock = SRWLOCK_INIT;
+static HCURSOR native_cursors[64];
+static unsigned int native_cursor_count;
+static FILETIME native_cursor_time;
+static ULONGLONG native_cursor_poll;
+
+static HCURSOR current_native_cursor(void)
+{
+    WIN32_FILE_ATTRIBUTE_DATA attributes;
+    HCURSOR result = NULL;
+    if (native_cursor_path[0] == 0)
+        return NULL;
+    AcquireSRWLockExclusive(&native_cursor_lock);
+    if (GetTickCount64() - native_cursor_poll >= 50) {
+        native_cursor_poll = GetTickCount64();
+        if (GetFileAttributesExW(native_cursor_path, GetFileExInfoStandard, &attributes) &&
+            CompareFileTime(&attributes.ftLastWriteTime, &native_cursor_time) != 0) {
+            HCURSOR loaded = (HCURSOR)LoadImageW(NULL, native_cursor_path, IMAGE_CURSOR,
+                                               0, 0, LR_LOADFROMFILE);
+            if (loaded != NULL) {
+                /* Retain recent handles across the separate GetCursorInfo and
+                 * GetIconInfo calls. Bound storage during long remote sessions. */
+                unsigned int slot = native_cursor_count % 64;
+                if (native_cursors[slot] != NULL)
+                    DestroyCursor(native_cursors[slot]);
+                native_cursors[slot] = loaded;
+                ++native_cursor_count;
+                native_cursor_time = attributes.ftLastWriteTime;
+            }
+        }
+    }
+    if (native_cursor_count != 0)
+        result = native_cursors[(native_cursor_count - 1) % 64];
+    ReleaseSRWLockExclusive(&native_cursor_lock);
+    return result;
+}
 
 static void write_log(const char *message)
 {
@@ -252,6 +289,12 @@ static BOOL WINAPI guarded_get_cursor_info(PCURSORINFO cursor)
         return FALSE;
     result = original_get_cursor_info(cursor);
     if (result && cursor != NULL) {
+        HCURSOR native = current_native_cursor();
+        if (native != NULL) {
+            cursor->flags = CURSOR_SHOWING;
+            cursor->hCursor = native;
+            return result;
+        }
         if ((cursor->flags & CURSOR_SHOWING) != 0 &&
             cursor->hCursor != NULL) {
             ZeroMemory(&icon, sizeof(icon));
@@ -551,6 +594,10 @@ static DWORD WINAPI initialize_guard(void *unused)
                          MAKELPARAM(HTCLIENT, WM_MOUSEMOVE));
         write_active_log("UU relay cursor guard");
     } else if (_wcsicmp(process_name, L"GameViewerServer.exe") == 0) {
+        wchar_t configuration[MAX_PATH];
+        if (adjacent_cursor_path(L"uu-cursor.ini", configuration))
+            GetPrivateProfileStringW(L"Cursor", L"NativeCursorPath", L"",
+                                     native_cursor_path, MAX_PATH, configuration);
         streamer_module = GetModuleHandleW(L"streamer.dll");
         cursor_guard_import imports[] = {
             { .module = main_module, .function = "GetCursorInfo",
@@ -598,6 +645,9 @@ BOOL WINAPI DllMain(HINSTANCE instance, DWORD reason, LPVOID reserved)
         if (thread != NULL)
             CloseHandle(thread);
     } else if (reason == DLL_PROCESS_DETACH) {
+        for (unsigned int index = 0; index < 64; ++index)
+            if (native_cursors[index] != NULL)
+                DestroyCursor(native_cursors[index]);
         if (fallback_cursor_owned && fallback_cursor != NULL)
             DestroyCursor(fallback_cursor);
         if (log_file != INVALID_HANDLE_VALUE) {

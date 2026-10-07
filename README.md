@@ -1,294 +1,66 @@
-<div align="center">
+# SteamOS 版 UU 远程
 
-[English](README.md) · [العربية](i18n/README.ar.md) · [Español](i18n/README.es.md) · [Français](i18n/README.fr.md) · [日本語](i18n/README.ja.md) · [한국어](i18n/README.ko.md) · [Tiếng Việt](i18n/README.vi.md) · [中文 (简体)](i18n/README.zh-Hans.md) · [中文（繁體）](i18n/README.zh-Hant.md) · [Deutsch](i18n/README.de.md) · [Русский](i18n/README.ru.md)
+使用 Steam 已安装的 **Proton**，在 **SteamOS 桌面模式和游戏模式**下运行网易 UU 远程。启动器会自动识别 Plasma 或 gamescope 会话，并通过 Proton 显示 UU 管理窗口。远程画面和输入使用当前会话；关闭管理窗口后，远程服务仍会在后台运行。
 
-<a href="README.md"><img src="docs/images/uu-plus-logo.png" alt="UU Remote Ubuntu Plus" width="140"></a>
+本项目是 [UU Remote Ubuntu Plus](https://github.com/llmir/uu-remote-ubuntu-plus) 的 SteamOS 专用分支，上游基于 [Lachlan Chen 的 UU Remote Ubuntu Bridge](https://github.com/lachlanchen/uu-remote-ubuntu-bridge)。本分支已移除 Ubuntu/GNOME 安装器、用户服务、TigerVNC 管理窗口，以及无关的剪贴板、终端和原生采集实验功能，保留原项目的 MIT 许可证及可复用的 UU 补丁和输入代码。
 
-# UU Remote Ubuntu Plus
+## 安装
 
-**Stay in the flow. Keep your development environment on Ubuntu.**
+需要 x86-64 SteamOS、正在运行的 Plasma Wayland 或 gamescope 会话，以及已安装官方 Proton 的 Steam。桌面模式使用 SteamOS 自带的 KRDP/FreeRDP；游戏模式使用系统的 GStreamer/PipeWire 和 libei 库。
 
-Keep your editor, terminals and app sessions on Ubuntu. Connect from your phone, Mac or Windows computer for Vibe Coding whenever inspiration strikes, then switch screens and keep writing.
+已验证的组合为 SteamOS 3.8.28、KRDP/Plasma 6.4.3、Proton 11.0 和 UU 远程 4.42.0.2770。目前 KRDP 兼容补丁仅适用于 6.4.3，其他版本需要先审核，再启用协议修正。
 
-[![Ubuntu 24.04 / 26.04](https://img.shields.io/badge/Ubuntu-24.04%20%7C%2026.04-E95420?logo=ubuntu&logoColor=white)](docs/ubuntu-26.04-port.md)
-[![GNOME 46 / 50](https://img.shields.io/badge/GNOME-46%20%7C%2050-4A86CF?logo=gnome&logoColor=white)](docs/architecture.md)
-[![UU Remote 4.42](https://img.shields.io/badge/UU_Remote-4.42.0.2770-00A870)](patches/uu-remote-4.42.0.2770.json)
-[![MIT](https://img.shields.io/badge/License-MIT-2F81F7)](LICENSE)
+在内置存储或 SD 卡上选择一个可写的真实目录，将仓库放在其 `project` 子目录中，启动器即可自动推断安装根目录：
 
-<img src="docs/images/vibe-coding-cross-device-en.png" alt="UU Remote Ubuntu Plus" width="1120">
-
-[Install](#quick-install) · [Features](#features-and-improvements) · [How it works](#technical-overview) · [Quality](#resolution-and-quality) · [Support](#support-the-project)
-
-</div>
-
-Plus connects NetEase UU Remote to your logged-in Ubuntu GNOME desktop. It runs
-the official Windows UU application in a dedicated Wine environment, with a
-local relay for the real desktop and a separate window for UU account and
-settings controls. Your applications, files and desktop session stay together
-as you move between local and remote use.
-
-The project builds on **[UU Remote Ubuntu Bridge by Lachlan Chen](https://github.com/lachlanchen/uu-remote-ubuntu-bridge)**.
-Plus brings newer Ubuntu and UU compatibility, four canvas presets, input and
-clipboard corrections, and clearer management and desktop controls.
-
-The installer targets x86-64 Ubuntu 24.04 / GNOME 46 and Ubuntu 26.04 / GNOME 50, using UU 4.42.0.2770. New installations select 1080p with the optional cursor guard off.
-
-The eleven language pages and technical guides describe Plus in each language; English is the canonical reference.
-
-## What's new in 0.2.0-work
-
-This development version adds terminal session persistence, multi-file reception
-and image-format compatibility work, with optional native capture experiments.
-
-- **Keep your terminal workspace:** enable `persistent` mode to return to the
-  same Ubuntu shell, directory and jobs after reconnecting. Fresh sessions
-  remain the default. [Set up terminal persistence](docs/native-ubuntu-terminal.md#keep-the-terminal-across-reconnects-opt-in).
-- **Receive several files at once:** copy regular files on the controller and
-  paste the completed batch into an Ubuntu file manager. The receive window
-  shows file and batch progress in actual bytes. [File reception](docs/releases/plus-v0.2.0-work.md#incoming-multi-file-copy).
-- **Preserve image formats:** retain original PNG with DIBV5/DIB offers. The
-  optional Mac companion adds TIFF for PNG compatibility. [Mac helper](docs/macos-clipboard-compat.md).
-- **Explore native capture:** optional CPU/GPU prototypes investigate capture
-  paths beyond the RDP relay. These remain experimental. [Developer guide](docs/native-video-backends.md).
-
-<img src="docs/images/uu-plus-update-20261006-en.png" alt="0.2.0-work features: persistent terminal workspace, multi-file reception with byte progress, image compatibility and experimental native capture." width="1120">
-
-File reception supports incoming regular files. Current Ubuntu → Mac image
-synchronization and dual-controller focus remain open. [Known limits and working-version notes](docs/releases/plus-v0.2.0-work.md).
-
-[Update notes and announcement](docs/updates/2026-10-06.md) · [Editable SVG](docs/images/uu-plus-update-20261006-en.svg)
-
-## From setup to remote work
-
-1. Install the bridge on your Ubuntu desktop.
-2. Run `uu-remote open` and sign in to UU in the local management window.
-3. Connect to this Ubuntu host from your phone, Mac or Windows UU controller.
-4. Choose a canvas size and use your regular desktop applications.
-
-## Features and improvements
-
-Upstream provides the desktop relay, keyboard and mouse input, phone IME handling and service recovery. Plus builds on that foundation with newer compatibility, clearer quality controls and refinements for everyday use.
-
-| Everyday use | What Plus adds |
-| --- | --- |
-| Newer Ubuntu and UU | Ubuntu 26.04 / GNOME 50 and UU 4.42 compatibility, with the Ubuntu 24.04 installation path retained. |
-| Pick your canvas | Switch between 720p, 1080p, 1440p and 4K in a graphical selector. Fit the full desktop into the canvas and restore the saved setting. |
-| Chinese, code and copy/paste | Repairs phone text commits and clipboard refresh, so new text reaches the desktop and code snippets and multiline text keep their content. |
-| Open settings. Stay connected. | Capture the UU manager and its popups separately. Dual-controller focus switching remains under investigation. |
-| Better local tools | Launch quality settings, VNC, FreeRDP and Openbox tools, with font, DPI and startup refinements. |
-| Install and maintain | Build the relay from pinned source and check runtime components before installation. Recover failed canvas changes and preview removal before uninstalling. |
-
-See the [upstream comparison](docs/upstream-comparison.md) for specific changes and version context.
-
-<img src="docs/images/experience-refinements-en.png" alt="Experience and measurements" width="1120">
-
-[Experience and measurements](docs/performance-evidence.md)
-
-## Quick install
-
-Use an x86-64 Ubuntu host with a logged-in GNOME desktop. Clone the project:
-
-```bash
-git clone https://github.com/llmir/uu-remote-ubuntu-plus.git
-cd uu-remote-ubuntu-plus
-```
-
-Installation needs the reviewed toolchain to build the relay, or an existing verified output matching the product profile; relay binaries are not included. Ubuntu 26.04 provides the reference-tool preparation path; Ubuntu 24.04 uses verified output reuse. [Toolchain preparation and relay reuse](docs/source-build.md#reference-toolchain)
-
-Once the tools or matching output are ready, run the normal installer:
-
-```bash
+```sh
+install_root="/absolute/path/to/UURemote"
+mkdir -p "$install_root"
+# Copy this checkout into "$install_root/project", then:
+cd "$install_root/project"
+./scripts/uu-steamos doctor
 ./install.sh
-./scripts/verify.sh --quick
-uu-remote open
+./scripts/uu-steamos open
 ```
 
-The installer prepares dependencies, builds compatibility components, configures
-GNOME Remote Desktop and starts user services. It asks for a relay password,
-stores it in GNOME Keyring and opens UU for account sign-in. Reinstallation
-retains saved settings and the existing UU account state.
+也可以将仓库放在其他位置，并在每个操作前传入 `--root "$install_root"`，安装命令同样使用 `./install.sh --root "$install_root"`。默认安装根目录为当前用户的 `~/.local/share/uu-remote-steamos`。
 
-New installations use 1080p and keep the optional cursor guard off. To start at 4K:
+启动器没有硬编码用户名、设备 IP、SD 卡标签或 Steam 库路径。它会从 Steam 库列表中查找已安装的 Proton，并将选定路径保存在安装目录内的 `config/settings.json`。
 
-```bash
-./install.sh --resolution 3840x2160
+`setup` 会将固定版本的工具下载到安装目录内，并编译辅助程序，不会安装系统软件包或独立 Wine。安装包、构建工具、兼容层数据、缓存和日志均保存在安装根目录中。Steam 自带的大型 Proton 运行时直接复用，不会复制一份。
+
+打开安装目录中的 `UU Remote.desktop`，即可启动后台服务并显示 UU 管理窗口。登录后，从手机或电脑上的 UU 控制端连接。重新安装和清理会保留现有账号数据。
+
+在游戏模式中，将 `UU Remote.desktop` 添加为非 Steam 应用。目标为原生可执行脚本 `scripts/uu-steamos`，启动选项为 `--root "/absolute/path/to/UURemote" open`。**不要勾选“强制使用特定 Steam Play 兼容性工具”**：启动器内部会选择已安装的 Proton，Steam 不应再通过 Proton 运行这个 Python 启动器。
+
+关闭 UU 窗口后，Steam 快捷方式会恢复为可启动状态，UU 远程后台继续运行。再次启动即可唤起管理窗口。Steam 的“停止”按钮结束前台快捷方式；要停止后台服务，请使用 `uu-steamos stop`。
+
+## 使用和清理
+
+```sh
+./scripts/uu-steamos start     # Backend only
+./scripts/uu-steamos open      # Start and show the native UU manager
+./scripts/uu-steamos status
+./scripts/uu-steamos stop
+./scripts/uu-steamos prune     # Stopped session: remove build tools and diagnostics
+./scripts/uu-steamos open      # Runs without compilers or installer downloads
 ```
 
-Report your environment and reproducible behavior through the [compatibility report form](https://github.com/llmir/uu-remote-ubuntu-plus/issues/new?template=compatibility.yml).
+- `start`：仅启动后台服务。
+- `open`：启动后台服务并显示 UU 管理窗口。
+- `status`：查看运行状态。
+- `stop`：停止后台服务。
+- `prune`：在停止会话后清理构建工具和诊断文件。
 
-The first installation may download and compile source dependencies. See
-[Source build](docs/source-build.md) for requirements and
-[Security](docs/security.md) for the isolation design.
+执行 `prune` 后，应用无需编译器或安装包即可再次运行；需要重新构建时，`setup` 会重新下载固定版本的工具链。请保留安装目录中的 `project`、`compatdata`、`build/compat`、`tools/runtime`、Proton 元数据、配置和 TLS 密钥。
 
-Get the Windows UU client from NetEase's official [uuyc.163.com](https://uuyc.163.com/) site. The bridge runs it in a dedicated Wine environment. UU retains its own license.
+本项目不会安装持久服务、系统应用菜单项或自动启动文件。启动时使用临时 systemd 用户单元，让后台服务在 SSH 断开后继续运行。卸载时，先停止 UU，再自行删除安装目录。
 
-## Technical overview
+配置选项、运行架构、验收记录和限制见 [SteamOS 适配说明](docs/steamos-proton.md)。
 
-<img src="docs/images/architecture-premium-v2-en.png" alt="Ubuntu desktop image, input and local UU management paths." width="1120">
+音频转发已禁用。本分支不支持剪贴板、文件传输、远程终端和多显示器。游戏模式采集 gamescope 合成后的画面，包括 Steam 界面和当前获得焦点的游戏。UU 管理窗口、远端设备桌面窗口及其弹窗归属于现有 Steam 快捷方式的应用 ID。
 
-The Ubuntu desktop travels through GNOME RDP into the SDL / FreeRDP relay, then through UU to the controller. Keyboard and mouse input return through the input bridge to the same desktop session. UU account and settings controls have their own local management window.
+## 开发
 
-Run `uu-remote open` for the manager; the desktop bridge keeps running when the viewer closes. The optional `uu-remote console` provides a local browser view. See [Architecture](docs/architecture.md) for the modules and input paths.
+Mac 仓库用于保存源码；安装和实际验收在 SteamOS 上进行。源码测试命令为 `python3 -B -m unittest discover -s tests -v`。实际 Proton 光标加载测试见 [贡献指南](CONTRIBUTING.md)。
 
-## Resolution and quality
-
-<img src="docs/images/quality-controls-cartoon-v2-en.png" alt="Ubuntu canvas and UU controller quality controls." width="1120">
-
-Open **UU Remote 画质与分辨率** from the GNOME application list, or run:
-
-```bash
-uu-remote quality gui
-```
-
-The full source desktop fits inside the canvas, while the physical monitor's
-resolution stays unchanged. Applying another preset briefly reconnects the
-bridge; a failed change restores the previous configuration.
-
-```bash
-uu-remote quality list
-uu-remote quality apply 2160p
-uu-remote quality status
-uu-remote quality guide
-```
-
-Set UU encoding quality, FPS and True Color in the **controller**: **Control
-Center → Quality** on a computer, or **Operations → Display** on a phone.
-
-The bridge also provides a bitrate ceiling:
-
-```bash
-uu-remote quality bitrate 20
-uu-remote quality bitrate 0
-```
-
-`20` requests a 20 Mbps ceiling; `0` removes it. Canvas size, encoding quality,
-requested FPS and bitrate are separate controls. See the
-[quality guide](docs/quality-guide.md) for practical choices.
-
-## Keyboard, clipboard and cursor
-
-Phone IME commits, code snippets and multiline text use the text path into Ubuntu. Physical keys and shortcuts retain their key events. Plus repairs text commits and clipboard refresh for everyday typing and text copy/paste. See [Adaptive keyboard relays](docs/adaptive-keyboard-relays.md) for the input modes.
-
-The optional cursor guard comes from upstream. Plus adds cursor asset handling
-and related corrections. To enable it for the dedicated UU Wine environment:
-
-```bash
-./install.sh --skip-packages --skip-account-login   --cursor-guard on --cursor-size auto
-```
-
-`auto` follows the desktop cursor size. A fixed value such as `24` controls the
-guard's fallback cursor size. Use `--cursor-guard off` to turn it off.
-Reinstallation briefly reconnects UU.
-
-## Ubuntu terminal and incoming copies
-
-Open **Terminal → PowerShell** in the UU controller to reach the real Ubuntu
-login shell. Opt in to `UURB_TERMINAL_SESSION_MODE=persistent` to reopen the same
-workspace; the [terminal guide](docs/native-ubuntu-terminal.md#keep-the-terminal-across-reconnects-opt-in)
-explains applying the setting at a planned reconnect and how `exit` closes it.
-
-For incoming files, copy regular files in the controller's file manager and
-paste into Ubuntu's file manager. **UU 文件接收** shows the file/batch byte
-progress. The completed batch is staged before it becomes pasteable; failed or
-cancelled unfinished batches are removed. Each file is limited to 64 MiB, with
-up to 64 files and 256 MiB per batch. Completed copies remain in the staging
-folder until you remove them. See the [clipboard notes](docs/releases/plus-v0.2.0-work.md#clipboard-images-and-text).
-
-Images use a separate compatibility path. The [optional Mac PNG helper](docs/macos-clipboard-compat.md)
-adds TIFF while preserving PNG. It is a local opt-in app, not a built-in UU
-feature or a guarantee that every current image route works.
-
-## Daily use and maintenance
-
-```bash
-uu-remote status
-uu-remote network
-uu-remote logs
-uu-remote restart
-uu-remote stop
-```
-
-Use `uu-remote open` for the management window and `uu-remote login` for account
-sign-in or recovery. Restarting, logging in and reinstalling briefly disconnect
-the controller.
-
-For source updates, save local edits, update the checkout and run:
-
-```bash
-./install.sh --skip-packages --skip-account-login
-./scripts/verify.sh --quick
-```
-
-Runtime source changes take effect after reinstallation. See
-[Reusable upgrade](docs/reusable-upgrade.md) for `uu-remote upgrade`, and
-[Automatic updates](docs/automatic-updates.md) for optional maintenance.
-
-To remove the bridge while retaining the dedicated UU account state:
-
-```bash
-./uninstall.sh --dry-run
-./uninstall.sh
-```
-
-`./uninstall.sh --purge` additionally removes the dedicated Wine prefix,
-relay credential and GNOME RDP enablement.
-
-## Beyond Ubuntu
-
-The current installer targets x86-64 Ubuntu 24.04 and 26.04. The [Linux porting guide](docs/porting.md) separates future ports into three layers:
-
-- Reuse the UU compatibility, relay and input core.
-- Adapt distribution packages, Wine paths and service integration.
-- Connect desktop-specific capture, input, display modes and actions.
-
-Other GNOME distributions can reuse more of the current desktop integration. KDE and Xfce ports need their own desktop backends.
-
-## Documentation and contributions
-
-- [October development update](docs/updates/2026-10-06.md), [Native terminal](docs/native-ubuntu-terminal.md) and [Mac image compatibility](docs/macos-clipboard-compat.md)
-- [Quality and resolution](docs/quality-guide.md)
-- [Source build](docs/source-build.md) and [Ubuntu 26.04 port](docs/ubuntu-26.04-port.md)
-- [Architecture](docs/architecture.md) and [Security](docs/security.md)
-- [Upstream comparison](docs/upstream-comparison.md) and [Measurements](docs/performance-evidence.md)
-- [Troubleshooting](docs/troubleshooting.md)
-- [Changelog](CHANGELOG.md) and [Contributing](CONTRIBUTING.md)
-
-Describe the version, selected settings and reproducible behavior.
-
-## Support the project
-
-**Buy me a coffee ☕**
-
-UU and Ubuntu keep changing. I’ll keep working to make Plus fit new releases and make text input, copy and paste, and picture quality feel right. A coffee helps cover version testing, development tools and tokens.
-
-| PayPal | Alipay · CNY | AlipayHK · HKD | WeChat · CNY | WeChat · HKD |
-| :---: | :---: | :---: | :---: | :---: |
-| <a href="https://paypal.me/mirmirlin"><img src="docs/images/support-paypal-en.png" alt="PayPal" width="160"></a> | <a href="docs/images/support/alipay-cny.jpg"><img src="docs/images/support-alipay-cny-en.png" alt="Alipay · CNY" width="160"></a> | <a href="docs/images/support/alipay-hkd.png"><img src="docs/images/support-alipay-hkd-en.png" alt="AlipayHK · HKD" width="160"></a> | <a href="docs/images/support/wechat-zh.png"><img src="docs/images/support-wechat-zh-en.png" alt="WeChat · CNY" width="160"></a> | <a href="docs/images/support/wechat-en.png"><img src="docs/images/support-wechat-en-en.png" alt="WeChat · HKD" width="160"></a> |
-
-<details>
-<summary>Alipay and WeChat payment codes</summary>
-
-<p><a href="docs/support.md#alipay-cny">Alipay CNY</a><br><a href="docs/images/support/alipay-cny.jpg"><img src="docs/images/support/alipay-cny.jpg" alt="Alipay CNY" width="240"></a></p>
-
-<p><a href="docs/support.md#alipay-hkd">AlipayHK HKD</a><br><a href="docs/images/support/alipay-hkd.png"><img src="docs/images/support/alipay-hkd.png" alt="AlipayHK HKD" width="240"></a></p>
-
-<p><a href="docs/support.md#wechat-zh">WeChat · CNY</a><br><a href="docs/images/support/wechat-zh.png"><img src="docs/images/support/wechat-zh.png" alt="WeChat · CNY" width="240"></a></p>
-
-<p><a href="docs/support.md#wechat-en">WeChat · HKD</a><br><a href="docs/images/support/wechat-en.png"><img src="docs/images/support/wechat-en.png" alt="WeChat · HKD" width="240"></a></p>
-
-</details>
-
-Reproducible bug reports, Linux porting notes and pull requests are welcome too. Thanks for helping shape the next version.
-
-[Support UU Remote Ubuntu Plus](docs/support.md)
-
-## Credits and license
-
-Based on **[UU Remote Ubuntu Bridge by Lachlan Chen](https://github.com/lachlanchen/uu-remote-ubuntu-bridge)**.
-The original copyright notice and [MIT license](LICENSE) are preserved.
-UU Remote and the other dependencies retain their own licenses and trademarks.
-This is an independent community project.
-
-Payment brand icons: [Simple Icons](https://simpleicons.org/) (CC0); third-party brands retain their trademarks.
-
-The optional GPU capture component has its own [AGPL-3.0 license and source notices](vendor/uuway-gpu-component/README.md); the MIT CPU adapter has [separate attribution](vendor/uur-native-cpu/NOTICE). These prototypes are outside the default installer.
+UU 远程软件本身遵循网易的许可条款，本项目采用 MIT 许可证。

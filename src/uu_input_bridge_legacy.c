@@ -9,6 +9,10 @@
 #include "uurb_ready.h"
 #include "uurb_rdp_state.h"
 
+#ifndef UURB_FORCE_INPUT_BROKER
+#define UURB_FORCE_INPUT_BROKER 0
+#endif
+
 typedef UINT(WINAPI *send_input_fn)(UINT, LPINPUT, int);
 typedef HINSTANCE(WINAPI *shell_execute_fn)(HWND, LPCWSTR, LPCWSTR,
                                             LPCWSTR, LPCWSTR, int);
@@ -94,7 +98,7 @@ static void open_log(void)
 
 static HWND find_relay_window(void)
 {
-    return FindWindowW(NULL, L"Ubuntu-Desktop-Relay");
+    return FindWindowW(NULL, L"SteamOS-Desktop-Relay");
 }
 
 static BOOL write_all(HANDLE handle, const void *buffer, DWORD size,
@@ -598,7 +602,7 @@ static UINT WINAPI bridged_send_input(UINT count, LPINPUT inputs, int size)
                                             INPUT_KEYBOARD);
     mouse_input = !unicode_keyboard && !physical_keyboard &&
                   contains_input_type(count, inputs, size, INPUT_MOUSE);
-    if (unicode_keyboard || public_rdp_route()) {
+    if (unicode_keyboard || public_rdp_route() || UURB_FORCE_INPUT_BROKER) {
         broker_started_ms = GetTickCount64();
         result = send_through_broker(count, inputs, size, &error);
         broker_ms = (DWORD)(GetTickCount64() - broker_started_ms);

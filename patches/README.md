@@ -1,73 +1,7 @@
-# Release Manifest Format
+# 固定版本与补丁清单
 
-Each `*.json` file in this directory describes one reviewed UU release. The
-generic patch engine loads all approved manifests and identifies a binary by
-its complete hash; it does not choose a patch from a version string or partial
-signature.
+`steamos-packages.json` 记录通过 SHA-256 固定版本的私有构建软件包和 LLVM MinGW。清理后保留必要的 Xvfb、Xephyr、Openbox 和 xcompmgr 运行工具。
 
-## Top-level fields
+已审核的 `uu-remote-*.json` 清单继承自上游 UU 二进制补丁记录。SteamOS 安装器仅使用 **4.42.0.2770**。旧版清单用于补丁引擎回归测试和来源追溯，不能作为安装版本选择。
 
-| Field | Meaning |
-| --- | --- |
-| `schema_version` | Manifest schema; currently `1` |
-| `review_status` | Must be `approved`; audit drafts use `draft` |
-| `product` | Human-readable upstream product name |
-| `version` | Exact UU release/build identifier |
-| `architecture` | Currently only `x86_64` |
-| `installer` | Filename, official URL, and full SHA-256 |
-| `server` | Server identity, patched identity, and bounded edits |
-| `health_monitor` | Companion filename and original SHA-256 |
-| `landmarks` | Semantic strings used to begin a new audit |
-| `imports` | API boundaries whose behavior matters to the bridge |
-| `review` | Method and evidence for approval |
-| `acceptance` | Optional, separate end-to-end promotion attestation; required for automatic live transfer of a newer release |
-
-## Promotion acceptance
-
-`review_status: approved` makes a manifest runnable by the patch engine. It
-does not by itself authorize an automatic update. A promotable newer release
-also needs a schema-1 `acceptance` object with all five test flags true:
-
-- disposable prefix
-- controller input
-- disconnect/reconnect
-- service restart
-- login preservation through an in-place installer update
-
-The object records 270-1800 stable seconds, a repository-relative evidence
-document, maintainer identity and time, and exact copies of
-`installer.sha256` and `server.patched_sha256`. This binds the acceptance to
-the tested bytes rather than only a version label. Existing installed
-manifests need not be edited retroactively.
-
-## Patch entries
-
-Every item in `server.patches` contains:
-
-- a stable `id`
-- a behavior-focused `description` and `rationale`
-- the exact signature `file_offset`
-- a generous unique `original` hexadecimal signature
-- an equal-length `replacement` hexadecimal signature
-
-The changed instruction bytes can be a small subset of the signature. Keeping
-unchanged context around them makes accidental matches less likely. The engine
-also verifies that signatures are unique, correctly positioned, and
-non-overlapping.
-
-## Lifecycle
-
-1. `audit-gameviewer.py inspect` creates an ignored draft under `build/`.
-2. A reviewer re-establishes semantics in the new disassembly and edits every
-   candidate.
-3. `audit-gameviewer.py finalize` derives the complete patched hash and emits
-   a new approved manifest.
-4. Disposable copy tests prove patch, verify, and byte-identical restore.
-5. The new manifest and semantic-review evidence are committed together.
-6. End-to-end controller, restart, and login-preservation tests run against a
-   disposable prefix.
-7. Only after those tests pass is the acceptance object and its evidence
-   committed; without it, the updater can cache and report the release but
-   cannot transfer it.
-
-See [the complete upstream maintenance guide](../docs/upstream-maintenance.md).
+对于未知安装包或二进制文件，补丁程序会拒绝处理，不会依靠启发式规则修改。UU 远程自动分发地址返回的安装包可能变化；如果校验和不匹配，需要重新审核对应版本。

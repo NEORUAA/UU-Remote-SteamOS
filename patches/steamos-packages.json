@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "tested_steamos_version": "3.8.28",
+  "packages": [
+    {
+      "url": "https://steamdeck-packages.steamos.cloud/archlinux-mirror/core-3.8/os/x86_64/linux-api-headers-6.15-1-x86_64.pkg.tar.zst",
+      "sha256": "b5cdf41804e8e9929e84dbe45ba212abafa70f36374cff88b931d79d373d3efd"
+    },
+    {
+      "url": "https://steamdeck-packages.steamos.cloud/archlinux-mirror/core-3.8/os/x86_64/glibc-2.41+r65+ge7c419a29575-1-x86_64.pkg.tar.zst",
+      "sha256": "4eeb7ce640fcb5c38a8a89c9015f68979f7f91cc71d715d3bd90f74bd442a107"
+    },
+    {
+      "url": "https://steamdeck-packages.steamos.cloud/archlinux-mirror/holo-3.8/os/x86_64/xorg-server-xvfb-21.1.22-1.1-x86_64.pkg.tar.zst",
+      "sha256": "24de1a651b90f790c3c810a450f863321eb5c1e5c8523095fb6efb70623e88ae"
+    },
+    {
+      "url": "https://steamdeck-packages.steamos.cloud/archlinux-mirror/core-3.8/os/x86_64/binutils-2.45-1-x86_64.pkg.tar.zst",
+      "sha256": "afd7c3908e9f51acbf51ccf52761b260b261f87aa5355b360cdde4f9960bfd22"
+    },
+    {
+      "url": "https://steamdeck-packages.steamos.cloud/archlinux-mirror/core-3.8/os/x86_64/libmpc-1.3.1-2-x86_64.pkg.tar.zst",
+      "sha256": "10554706eb15ed2186fbd55fd5db8fa5919788ac9a75d26c0b9ef5bdfca9d470"
+    },
+    {
+      "url": "https://steamdeck-packages.steamos.cloud/archlinux-mirror/core-3.8/os/x86_64/libisl-0.27-1-x86_64.pkg.tar.zst",
+      "sha256": "55a36e8195e6d9ce2efeb4276c60df6b6e7d94812fa36f8423d5ce664a5d34df"
+    },
+    {
+      "url": "https://steamdeck-packages.steamos.cloud/archlinux-mirror/core-3.8/os/x86_64/gcc-15.1.1+r7+gf36ec88aa85a-1-x86_64.pkg.tar.zst",
+      "sha256": "d8bc5c74e9b58c281c0aca51cc3f6b18cff37cdac5d24ea7f67488eeb6caa27a"
+    },
+    {
+      "url": "https://steamdeck-packages.steamos.cloud/archlinux-mirror/extra-3.8/os/x86_64/openbox-3.6.1-12-x86_64.pkg.tar.zst",
+      "sha256": "f4c85bfb2cdcd5f7a88d27ef510c4c36a59a105aabfed4fc8d6a4023289cc801"
+    },
+    {
+      "url": "https://steamdeck-packages.steamos.cloud/archlinux-mirror/holo-3.8/os/x86_64/xorg-server-xephyr-21.1.22-1.1-x86_64.pkg.tar.zst",
+      "sha256": "4e3918d4225de3daa67d3cd8502ce6e60d5c1036bd457fb73c8dd0adc3a8b19c"
+    },
+    {
+      "url": "https://steamdeck-packages.steamos.cloud/archlinux-mirror/extra-3.8/os/x86_64/xcompmgr-1.1.10-2-x86_64.pkg.tar.zst",
+      "sha256": "d5883018ed796d960d58c6929040d1a8de6cb44ed5360a7667b5563f7f4d975e"
+    }
+  ],
+  "llvm_mingw": {
+    "url": "https://github.com/mstorsjo/llvm-mingw/releases/download/20261006/llvm-mingw-20261006-ucrt-ubuntu-22.04-x86_64.tar.xz",
+    "sha256": "5f9c6ed95b2d4bdb2869a488c5fd5857fbdabcf288a0aa3eb1da43f6a08d8ab4",
+    "directory": "llvm-mingw-20261006-ucrt-ubuntu-22.04-x86_64"
+  }
+}

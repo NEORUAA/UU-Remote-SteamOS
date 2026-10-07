@@ -1,6 +1,7 @@
 """Run the actual broker dispatch/translation with controlled Win32 callbacks."""
 from pathlib import Path
 import subprocess
+import os
 import tempfile
 import unittest
 
@@ -17,7 +18,7 @@ class BrokerNormalizationTests(unittest.TestCase):
             (directory / "broker-functions.inc").write_text(source[start:end])
             binary = directory / "broker-normalization-tests"
             compiled = subprocess.run(
-                ["/usr/bin/cc", "-std=c11", "-Wall", "-Wextra", "-Wpedantic",
+                [os.environ.get("UURB_TEST_CC", "cc"), "-std=c11", "-Wall", "-Wextra", "-Wpedantic",
                  "-Werror", "-O2", "-I", str(directory),
                  str(ROOT / "tests/fixtures/broker_normalization_fixture.c"),
                  "-o", str(binary)],

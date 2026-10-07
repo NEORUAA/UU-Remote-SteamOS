@@ -1178,7 +1178,7 @@ static DWORD send_relay_inputs(DWORD source_count, const INPUT *source,
 
 static BOOL request_relay_focus(DWORD *waited_ms)
 {
-    HWND relay = FindWindowW(NULL, L"Ubuntu-Desktop-Relay");
+    HWND relay = FindWindowW(NULL, L"SteamOS-Desktop-Relay");
     DWORD elapsed = 0;
 
     *waited_ms = 0;

@@ -1,6 +1,7 @@
 """Exercise actual broker literal-text planning with controlled transport callbacks."""
 from pathlib import Path
 import subprocess
+import os
 import tempfile
 import unittest
 
@@ -22,7 +23,7 @@ class BrokerLiteralTextTests(unittest.TestCase):
             (directory / "broker-functions.inc").write_text(actual)
             binary = directory / "broker-literal-text-tests"
             compiled = subprocess.run(
-                ["/usr/bin/cc", "-std=c11", "-Wall", "-Wextra", "-Wpedantic",
+                [os.environ.get("UURB_TEST_CC", "cc"), "-std=c11", "-Wall", "-Wextra", "-Wpedantic",
                  "-Werror", "-O2", "-I", str(directory), "-I", str(ROOT / "src"),
                  str(ROOT / "tests/fixtures/broker_literal_text_fixture.c"), "-o", str(binary)],
                 capture_output=True, text=True, timeout=30)
