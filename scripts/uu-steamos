@@ -247,7 +247,7 @@ def process_matches(record, script):
 def check_dependencies(kind='plasma'):
     required = ('bwrap', 'xdotool', 'xprop', 'xauth', 'systemd-run',
                 'openssl', 'ffmpeg', 'tar', 'pacman')
-    required += ('gst-launch-1.0',) if kind == 'gamescope' else ('krdpserver', 'xfreerdp3')
+    required += ('gst-launch-1.0', 'kwin_wayland', 'Xwayland', 'dbus-daemon') if kind == 'gamescope' else ('krdpserver', 'xfreerdp3')
     missing = [name for name in required if not shutil.which(name)]
     if missing:
         raise SystemExit('Missing SteamOS desktop tools: ' + ', '.join(missing))

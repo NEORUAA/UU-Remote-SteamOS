@@ -33,14 +33,6 @@
     {
       "url": "https://steamdeck-packages.steamos.cloud/archlinux-mirror/extra-3.8/os/x86_64/openbox-3.6.1-12-x86_64.pkg.tar.zst",
       "sha256": "f4c85bfb2cdcd5f7a88d27ef510c4c36a59a105aabfed4fc8d6a4023289cc801"
-    },
-    {
-      "url": "https://steamdeck-packages.steamos.cloud/archlinux-mirror/holo-3.8/os/x86_64/xorg-server-xephyr-21.1.22-1.1-x86_64.pkg.tar.zst",
-      "sha256": "4e3918d4225de3daa67d3cd8502ce6e60d5c1036bd457fb73c8dd0adc3a8b19c"
-    },
-    {
-      "url": "https://steamdeck-packages.steamos.cloud/archlinux-mirror/extra-3.8/os/x86_64/xcompmgr-1.1.10-2-x86_64.pkg.tar.zst",
-      "sha256": "d5883018ed796d960d58c6929040d1a8de6cb44ed5360a7667b5563f7f4d975e"
     }
   ],
   "llvm_mingw": {

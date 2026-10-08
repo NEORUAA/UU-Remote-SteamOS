@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "uu_version": "4.42.0.2770",
+  "proton_version": "11.0",
+  "client_refresh": {
+    "sha256": "67fd2c85f15e63f41acc3a80649fef456c93fde0410c7e1fdec221ebbc2731bf",
+    "rva": "0x19a112f",
+    "file_offset": 26871087,
+    "original": "bb1e000000"
+  },
+  "d3d11": {
+    "sha256": "b48b763bc1b9fdab46e084a0a806175ca4c0f932ac25c0c86f482a4ebecd5bc8",
+    "patches": [
+      {
+        "name": "d3d11_video_device_CheckVideoDecoderFormat",
+        "rva": "0x28db0",
+        "original": "5557565348",
+        "code": "4885d20f94c14d85c9410f94c2b8570007804108ca753231c049ba68be811bc7a0d311b9000000004c3912751949bab98400c04f2e73c54c395208750931c94183f8670f94c1418909c3",
+        "unwind": "01000000"
+      },
+      {
+        "name": "d3d11_video_device_GetVideoDecoderConfigCount",
+        "rva": "0x29a10",
+        "original": "554889e548",
+        "code": "4885d20f94c14d85c0410f94c1b8570007804108c9756831c048b968be811bc7a0d31141b90000000048390a754e48b9b98400c04f2e73c548394a08753e837a186775388b4a1085c974318b521481f901100000410f93c1448d52ff4181fa00100000410f93c24508ca41b900000000750a09caf7d283e2014189d1458908c3",
+        "unwind": "01000000"
+      },
+      {
+        "name": "d3d11_video_device_GetVideoDecoderConfig",
+        "rva": "0x299b0",
+        "original": "554889e548",
+        "code": "5653b8570007804885d20f84a200000048b968be811bc7a0d31148390a0f858f00000049bab98400c04f2e73c54c395208757f837a18677579448b5a104585db74708b52144181fb011000000f93c38d72ff81fe00100000400f93c64008de75514d85c9744c4409da83e2014409c2754131c041c704810000000048ffc04883f81975efb8080000004883c16849894c01f84d8914014883c0104883f83875ed41c741300200000041c741601000000031c05b5ec3",
+        "unwind": "0102020002300160"
+      }
+    ]
+  },
+  "wined3d": {
+    "sha256": "28ecf236d1834840099e9a6a6647f38d604285098f3a88f5aada94eebd2df73a",
+    "file_offset": 1180192,
+    "original": "5c000000500000000200000002000000",
+    "replacement": "5b0000004f0000000200000002000000"
+  },
+  "streamer": {
+    "original_sha256": "ab8ade084c4f714fe5b21d1324b7e5d13e41bb036d4382e4bc231383b3d56e79",
+    "patched_sha256": "0fe4add6746d3230d5b90098cf7f37a916b032fdeeb5be97f99cfdb7de2c48b4",
+    "rva": "0xb71095",
+    "file_offset": 11994261,
+    "original": "0f8510030000",
+    "replacement": "e91103000090"
+  },
+  "detector": {
+    "original_sha256": "a438cc88f2cac899c9764749f65346edcabdd6c36b3e6f6c6b4e746123e96c29",
+    "patched_sha256": "410089d9dc5fcc191a9b28a0c4a58a9ac4cdd47ea8e63ed0eba4f431fa131561",
+    "file_offset": 619874,
+    "original": "0f8564060000",
+    "replacement": "e96506000090"
+  },
+  "helper_source_sha256": "d1dca7dd5d20a68530888e3e5a3fc267209f3c9a6863093172a322f84c89b1de"
+}

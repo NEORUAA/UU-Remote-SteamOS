@@ -9,6 +9,7 @@ import signal
 import socket
 import subprocess
 import time
+import uu_steamos_video
 
 root = Path(os.environ['UURB_STEAMOS_ROOT'])
 prefix = Path(os.environ['WINEPREFIX'])
@@ -25,6 +26,7 @@ owns_prefix = False
 physical_env = dict(os.environ)
 manager_env = dict(os.environ)
 manager_host = None
+manager_host_env = None
 env = dict(os.environ)
 
 
@@ -128,43 +130,48 @@ def manager_running():
 def manager_surface():
     if manager_host is None or manager_host.poll() is not None:
         return None
-    # Xephyr does not publish _NET_WM_PID on its host window. Its unique
-    # instance class identifies this installation's display instead.
-    name = 'uurb-manager-' + manager_env['DISPLAY'].lstrip(':')
-    result = subprocess.run(['xdotool', 'search', '--classname', '^' + name + '$'],
-               env=physical_env, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+    result = subprocess.run(['xdotool', 'search', '--pid', str(manager_host.pid)],
+               env=manager_host_env, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
     return next(iter(result.stdout.decode().split()), None)
 
 
 def prepare_manager_display():
-    global manager_host, manager_env
+    global manager_host, manager_env, manager_host_env
     if manager_host is not None and manager_host.poll() is None:
         return
-    for binary in ('Xephyr', 'openbox', 'xcompmgr'):
-        if not (root / 'tools/runtime/usr/bin' / binary).is_file():
-            raise RuntimeError('Run setup to install the compact UU display runtime.')
-    display = ':' + str(int(private_display[1:]) + 1)
-    authority = root / 'runtime/manager.xauth'
-    authority.touch(mode=0o600, exist_ok=True)
-    run(['xauth', '-f', str(authority), 'add', display, '.', secrets.token_hex(16)])
-    manager_env = {**physical_env, 'DISPLAY': display, 'XAUTHORITY': str(authority)}
+    ready = root / 'runtime/manager-display.json'
+    ready.unlink(missing_ok=True)
+    bus = root / 'runtime/manager-bus'
+    bus.unlink(missing_ok=True)
+    address = 'unix:path=' + str(bus)
+    spawn('manager-dbus', ['dbus-daemon', '--session', '--nofork', '--address=' + address],
+          physical_env)
+    wait_until(bus.exists, 'private UU display bus')
+    width, height = os.environ.get('UURB_RESOLUTION', '1280x800').split('x')
+    selected = {**physical_env, 'DBUS_SESSION_BUS_ADDRESS': address,
+                'QT_QPA_PLATFORM': 'xcb'}
+    selected.pop('WAYLAND_DISPLAY', None)
+    # Steam can reopen a backend initially started through SSH on another
+    # gamescope Xwayland instance. The existing host window stays on its server.
+    manager_host_env = dict(selected)
+    manager_host = spawn('manager-kwin', ['kwin_wayland',
+        '--x11-display', physical_env['DISPLAY'], '--xwayland',
+        '--socket', 'uurb-manager-' + private_display[1:],
+        '--width', width, '--height', height, '--no-lockscreen',
+        '--no-global-shortcuts', '--no-kactivities', '--exit-with-session',
+        str(Path(__file__).with_name('uu-steamos-display.py'))], selected)
+    wait_until(ready.exists, 'hardware-accelerated UU Xwayland display')
+    display_env = json.loads(ready.read_text())
+    manager_env = {**selected, **display_env}
+    if 'XAUTHORITY' not in display_env:
+        manager_env.pop('XAUTHORITY', None)
     manager_env.pop('WAYLAND_DISPLAY', None)
-    selected = {**physical_env, 'LD_LIBRARY_PATH': str(root / 'tools/runtime/usr/lib')}
-    manager_host = spawn('manager-xephyr', [str(root / 'tools/runtime/usr/bin/Xephyr'),
-        display, '-screen', os.environ.get('UURB_RESOLUTION', '1280x800'),
-        '-title', 'UU Remote', '-name', 'uurb-manager-' + display[1:], '-no-host-grab', '-noreset',
-        '-nolisten', 'tcp', '-nolisten', 'local', '-auth', str(authority)], selected)
     wait_until(lambda: subprocess.run(['xdotool', 'getdisplaygeometry'], env=manager_env,
         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0,
         'UU window display')
-    spawn('manager-openbox', [str(root / 'tools/runtime/usr/bin/openbox'), '--sm-disable',
-        '--config-file', str(root / 'tools/runtime/etc/xdg/openbox/rc.xml')],
-        {**manager_env, 'LD_LIBRARY_PATH': str(root / 'tools/runtime/usr/lib'),
-         'XDG_DATA_DIRS': f'{root}/tools/runtime/usr/share:/usr/share'})
-    spawn('manager-compositor', [str(root / 'tools/runtime/usr/bin/xcompmgr'), '-n'],
-          {**manager_env, 'LD_LIBRARY_PATH': str(root / 'tools/runtime/usr/lib')})
-    spawn('manager-menus', ['/usr/bin/python3', '-B',
-          str(Path(__file__).with_name('uu-steamos-menus.py'))], manager_env)
+    surface = manager_surface()
+    if surface:
+        run(['xdotool', 'set_window', '--name', 'UU Remote', surface], manager_host_env)
 
 
 def open_manager(context=None):
@@ -181,6 +188,18 @@ def open_manager(context=None):
             physical_env['SteamGameId'] = str(context.get('gameid', appid))
         prepare_manager_display()
     # Always restore the actual client rather than mapping an empty Wine desktop.
+    if not manager_running():
+        modes = subprocess.run(['xrandr', '--current'], env=physical_env,
+            check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE).stdout.decode()
+        refresh = uu_steamos_video.display_refresh(modes)
+        uu_steamos_video.prepare(root, Path(proton), app, refresh)
+        log(f'UU local display limit seeded from active host modes: {refresh} Hz')
+    manager_env.update(WINE_D3D_CONFIG='renderer=vulkan',
+                       RADV_EXPERIMENTAL=','.join(filter(None,
+                           (physical_env.get('RADV_EXPERIMENTAL', ''), 'video_decode'))),
+                       QT_OPENGL='desktop',
+                       QT_ANGLE_PLATFORM='opengl', WINEDEBUG='-all')
+    manager_env['WINEDLLOVERRIDES'] = physical_env['WINEDLLOVERRIDES'] + ';d3d11,wined3d=n,b'
     spawn('manager', proton_command('explorer', '/desktop=root',
           r'C:\Program Files\Netease\GameViewer\GameViewer.exe'), manager_env)
     wait_until(lambda: manager_running() and find_manager() is not None,
@@ -193,8 +212,8 @@ def open_manager(context=None):
         appid = physical_env['SteamAppId']
         if appid != '0':
             run(['xprop', '-id', surface, '-f', 'STEAM_GAME', '32c',
-                 '-set', 'STEAM_GAME', appid], physical_env)
-        run(['xdotool', 'windowmap', surface, 'windowraise', surface], physical_env)
+                 '-set', 'STEAM_GAME', appid], manager_host_env)
+        run(['xdotool', 'windowmap', surface, 'windowraise', surface], manager_host_env)
         # Nested focus needs the host surface to be presented first. Waiting
         # synchronously before Steam knows that surface would deadlock launch.
         run(['xdotool', 'windowmap', window, 'windowactivate', window], manager_env)
@@ -208,7 +227,7 @@ def manager_visible():
         surface = manager_surface()
         if surface:
             # Steam should not retain a blank nested display after UU closes.
-            run(['xdotool', 'windowunmap', surface], physical_env)
+            run(['xdotool', 'windowunmap', surface], manager_host_env)
     return visible
 
 
@@ -305,6 +324,7 @@ def serve():
         arguments_file.chmod(0o600)
         spawn('rdp', ['xfreerdp3', f'/args-from:{arguments_file}'])
         wait_until(lambda: bool(window_ids()), 'RDP canvas', seconds=45)
+    env['WINEDLLOVERRIDES'] += ';d3d11,wined3d=b'
     # Initialize Wine services on the private canvas, keeping the host display free.
     spawn('winlogon', proton_command(compat / 'winlogon.exe'))
     token = secrets.token_hex(32)

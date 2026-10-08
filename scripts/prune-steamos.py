@@ -26,7 +26,7 @@ def main():
             fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
         except BlockingIOError:
             raise SystemExit('Stop UU before pruning.')
-        for binary in ('usr/bin/Xvfb', 'usr/bin/Xephyr', 'usr/bin/openbox', 'usr/bin/xcompmgr'):
+        for binary in ('usr/bin/Xvfb', 'usr/bin/openbox'):
             if not (root / 'tools/runtime' / binary).is_file():
                 raise SystemExit('Run setup to prepare the compact runtime before pruning.')
         tools = root / 'tools'
@@ -39,7 +39,8 @@ def main():
                 remove(path)
         keep = {'uu-input-bridge.dll', 'uu-cursor-guard.dll', 'uu-input-broker.exe',
                 'uu-injector.exe', 'uu-healthd-stub.exe', 'winlogon.exe',
-                'uu-x11-input', 'uu-krdp-input-auth.so'}
+                'uu-x11-input', 'uu-krdp-input-auth.so',
+                'd3d11-video.dll', 'wined3d-video.dll'}
         for path in (root / 'build/compat').iterdir():
             if path.name not in keep:
                 remove(path)

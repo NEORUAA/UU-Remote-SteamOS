@@ -1,7 +1,13 @@
 # 固定版本与补丁清单
 
-`steamos-packages.json` 记录通过 SHA-256 固定版本的私有构建软件包和 LLVM MinGW。清理后保留必要的 Xvfb、Xephyr、Openbox 和 xcompmgr 运行工具。
+`steamos-packages.json` 记录通过 SHA-256 固定版本的私有构建软件包和 LLVM MinGW。清理后保留必要的 Xvfb 和 Openbox 采集工具。游戏模式的 UU 界面使用 SteamOS 自带的 KWin/Xwayland，无需下载 Xephyr 或 xcompmgr。
 
 已审核的 `uu-remote-*.json` 清单继承自上游 UU 二进制补丁记录。SteamOS 安装器仅使用 **4.42.0.2770**。旧版清单用于补丁引擎回归测试和来源追溯，不能作为安装版本选择。
 
 对于未知安装包或二进制文件，补丁程序会拒绝处理，不会依靠启发式规则修改。UU 远程自动分发地址返回的安装包可能变化；如果校验和不匹配，需要重新审核对应版本。
+
+`steamos-video.json` 固定 Proton 视频 DLL、UU 串流库和独立编解码探测器的审核哈希。视频兼容准备程序生成安装目录内的 DLL 副本，补齐 H.264/NV12 查询与 UNORM 平面视图，并为 UU 保留非共享纹理路径。原始 Steam Proton 保持只读。原生查询实现位于 `src/uu_video_caps.c`；清单中的代码对应其固定源码哈希，PE 跳转和异常展开目录由准备程序生成。
+
+同一清单审核了 UU 客户端显示限值函数。Wine 私有显示报告 0 Hz 时，原函数保留 30 帧默认值并限制用户请求；准备程序只将该默认值替换为启动时主机当前显示模式的刷新率，保留原函数的显示枚举及用户请求限制逻辑。每次修改前还原这一个立即数并校验完整文件哈希，允许已审核版本重复启动和刷新率变化，拒绝其他二进制改动。
+
+新增视频查询函数的异常展开表与实际寄存器入栈操作匹配，测试检查恢复顺序及原有异常目录的保留。格式依据 [Microsoft x64 异常处理文档](https://learn.microsoft.com/zh-cn/cpp/build/exception-handling-x64)。

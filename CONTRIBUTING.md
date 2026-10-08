@@ -2,7 +2,7 @@
 
 本分支面向使用 Plasma Wayland 的 SteamOS 桌面模式，以及使用 gamescope 的游戏模式，兼容层采用 Steam Proton。所有生成文件都应保存在选定的安装根目录内。不要为启动器添加系统软件包安装、独立 Wine 发行版或特定设备的硬编码路径。
 
-主要入口为 `scripts/uu-steamos`；`install.sh` 调用其 `setup` 操作。会话管理进程负责私有 Xvfb/Openbox/FreeRDP 画布、KRDP 和该 prefix 中的 Proton 工作进程。游戏模式的管理界面使用 Xephyr、Openbox 和 xcompmgr。兼容程序由 `scripts/build-compat.sh` 构建。修改 UU 二进制文件前，必须按 `patches/uu-remote-4.42.0.2770.json` 中的完整哈希进行验证。
+主要入口为 `scripts/uu-steamos`；`install.sh` 调用其 `setup` 操作。会话管理进程负责私有 Xvfb/Openbox/FreeRDP 画布、KRDP 和该 prefix 中的 Proton 工作进程。游戏模式的管理界面使用系统自带的 KWin/Xwayland，复用显卡硬件加速；私有 D-Bus、配置、缓存和运行文件都保存在安装目录内。兼容程序由 `scripts/build-compat.sh` 构建。修改 UU 二进制文件前，必须按 `patches/uu-remote-4.42.0.2770.json` 中的完整哈希进行验证。
 
 运行源码测试和检查：
 

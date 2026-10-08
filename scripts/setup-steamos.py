@@ -65,7 +65,7 @@ def configure():
     runtime = root / 'tools/runtime'
     runtime.mkdir(exist_ok=True)
     for package in packages['packages']:
-        if any(name in package['url'] for name in ('/xorg-server-xvfb-', '/xorg-server-xephyr-', '/xcompmgr-', '/openbox-')):
+        if any(name in package['url'] for name in ('/xorg-server-xvfb-', '/openbox-')):
             archive = download(package['url'], package['sha256'])
             run(['tar', '-xf', archive, '-C', runtime])
     mingw = packages['llvm_mingw']

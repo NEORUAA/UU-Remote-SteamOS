@@ -2,6 +2,7 @@
 import importlib.machinery
 import importlib.util
 import ast
+import json
 import os
 from pathlib import Path
 import tempfile
@@ -81,7 +82,7 @@ class SteamOSStorageTests(unittest.TestCase):
                 (proton / 'files/bin/wineserver').touch()
                 (proton / 'proton').touch()
             self.assertEqual(runtime.discover_proton(steam),
-                             library / 'steamapps/common/Proton 11.0/proton')
+                             (library / 'steamapps/common/Proton 11.0/proton').resolve())
 
     def test_root_is_inferred_from_portable_project_location(self):
         with patch.object(runtime, '__file__', '/portable disk/UURemote/project/scripts/uu-steamos'), \
@@ -129,7 +130,7 @@ class SteamOSStorageTests(unittest.TestCase):
             mirror = runtime.prepare_proton(root, installed / 'proton')
             self.assertTrue(mirror.is_relative_to(root))
             self.assertTrue((mirror.parent / 'files').is_symlink())
-            self.assertEqual((mirror.parent / 'files').resolve(), installed / 'files')
+            self.assertEqual((mirror.parent / 'files').resolve(), (installed / 'files').resolve())
             self.assertEqual((installed / 'files/payload').read_bytes(), b'original-runtime')
             self.assertFalse((installed / 'dist.lock').exists())
 
@@ -151,6 +152,53 @@ class SteamOSStorageTests(unittest.TestCase):
 
 
 class SteamOSSandboxTests(unittest.TestCase):
+    def test_nested_display_uses_private_bus_and_child_assigned_xwayland(self):
+        from unittest.mock import Mock
+        tree = ast.parse((ROOT / 'scripts/uu-steamos-session.py').read_text())
+        function = next(item for item in tree.body if isinstance(item, ast.FunctionDef)
+                        and item.name == 'prepare_manager_display')
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / 'runtime').mkdir()
+            host = Mock(pid=2345)
+            host.poll.return_value = None
+            calls = []
+
+            def spawn(name, command, selected):
+                calls.append((name, command, selected))
+                if name == 'manager-dbus':
+                    (root / 'runtime/manager-bus').touch()
+                if name == 'manager-kwin':
+                    (root / 'runtime/manager-display.json').write_text(
+                        json.dumps({'DISPLAY': ':43', 'XAUTHORITY': ''}))
+                return host
+
+            def wait_until(predicate, description):
+                self.assertTrue(predicate(), description)
+
+            physical = {'DISPLAY': ':7', 'WAYLAND_DISPLAY': '/host/wayland-0',
+                        'DBUS_SESSION_BUS_ADDRESS': 'unix:path=/host/bus',
+                        'WINEDLLOVERRIDES': ''}
+            namespace = {'root': root, 'manager_host': None, 'manager_env': {},
+                         'physical_env': physical, 'private_display': ':30',
+                         'Path': Path, 'os': os, 'json': json, 'spawn': spawn,
+                         '__file__': str(ROOT / 'scripts/uu-steamos-session.py'),
+                         'wait_until': wait_until, 'manager_surface': lambda: None,
+                         'subprocess': Mock(run=Mock(return_value=Mock(returncode=0)))}
+            exec(compile(ast.Module(body=[function], type_ignores=[]), 'display', 'exec'), namespace)
+            namespace['prepare_manager_display']()
+            self.assertEqual(namespace['manager_env']['DISPLAY'], ':43')
+            self.assertEqual(namespace['manager_host_env']['DISPLAY'], ':7')
+            physical['DISPLAY'] = ':8'
+            self.assertEqual(namespace['manager_host_env']['DISPLAY'], ':7')
+            self.assertEqual(namespace['manager_env']['DBUS_SESSION_BUS_ADDRESS'],
+                             'unix:path=' + str(root / 'runtime/manager-bus'))
+            self.assertNotIn('WAYLAND_DISPLAY', namespace['manager_env'])
+            self.assertEqual(calls[1][1][1:3], ['--x11-display', ':7'])
+            self.assertEqual(physical['DBUS_SESSION_BUS_ADDRESS'], 'unix:path=/host/bus')
+            namespace['prepare_manager_display']()
+            self.assertEqual(len(calls), 2)
+
     def test_closed_manager_hides_gamescope_surface_but_keeps_backend(self):
         from unittest.mock import Mock
         tree = ast.parse((ROOT / 'scripts/uu-steamos-session.py').read_text())
@@ -160,30 +208,33 @@ class SteamOSSandboxTests(unittest.TestCase):
         lookup = Mock(return_value=None)
         namespace = {'manager_running': lambda: True, 'find_manager': lookup,
                      'manager_surface': lambda: '12345', 'run': execute,
+                     'manager_host_env': {'DISPLAY': ':0'},
                      'physical_env': {'UURB_SESSION_KIND': 'gamescope', 'DISPLAY': ':1'}}
         exec(compile(ast.Module(body=[function], type_ignores=[]), 'manager_visible', 'exec'), namespace)
         self.assertFalse(namespace['manager_visible']())
-        execute.assert_called_once_with(['xdotool', 'windowunmap', '12345'], namespace['physical_env'])
+        execute.assert_called_once_with(['xdotool', 'windowunmap', '12345'], namespace['manager_host_env'])
         lookup.return_value = '9876'
         execute.reset_mock()
         self.assertTrue(namespace['manager_visible']())
         execute.assert_not_called()
 
-    def test_gamescope_surface_search_uses_nested_display_identity(self):
+    def test_gamescope_surface_search_keeps_original_host_display_on_steam_reopen(self):
         from unittest.mock import Mock
         tree = ast.parse((ROOT / 'scripts/uu-steamos-session.py').read_text())
         function = next(item for item in tree.body if isinstance(item, ast.FunctionDef)
                         and item.name == 'manager_surface')
         host = Mock()
+        host.pid = 2345
         host.poll.return_value = None
         execute = Mock(return_value=Mock(stdout=b'12345\n'))
         namespace = {'manager_host': host, 'manager_env': {'DISPLAY': ':23'},
+                     'manager_host_env': {'DISPLAY': ':0'},
                      'physical_env': {'DISPLAY': ':1'}, 'subprocess': Mock(run=execute)}
         exec(compile(ast.Module(body=[function], type_ignores=[]), 'manager_surface', 'exec'), namespace)
         self.assertEqual(namespace['manager_surface'](), '12345')
         self.assertEqual(execute.call_args.args[0],
-                         ['xdotool', 'search', '--classname', '^uurb-manager-23$'])
-        self.assertEqual(execute.call_args.kwargs['env']['DISPLAY'], ':1')
+                         ['xdotool', 'search', '--pid', '2345'])
+        self.assertEqual(execute.call_args.kwargs['env']['DISPLAY'], ':0')
         host.poll.return_value = 1
         execute.reset_mock()
         self.assertIsNone(namespace['manager_surface']())

@@ -6,7 +6,7 @@
 
 ## 安装
 
-需要 x86-64 SteamOS、正在运行的 Plasma Wayland 或 gamescope 会话，以及已安装官方 Proton 的 Steam。桌面模式使用 SteamOS 自带的 KRDP/FreeRDP；游戏模式使用系统的 GStreamer/PipeWire 和 libei 库。
+需要 x86-64 SteamOS、正在运行的 Plasma Wayland 或 gamescope 会话，以及已安装官方 Proton 的 Steam。桌面模式使用 SteamOS 自带的 KRDP/FreeRDP；游戏模式使用系统的 KWin/Xwayland、GStreamer/PipeWire 和 libei 库。
 
 已验证的组合为 SteamOS 3.8.28、KRDP/Plasma 6.4.3、Proton 11.0 和 UU 远程 4.42.0.2770。目前 KRDP 兼容补丁仅适用于 6.4.3，其他版本需要先审核，再启用协议修正。
 
@@ -56,6 +56,8 @@ cd "$install_root/project"
 本项目不会安装持久服务、系统应用菜单项或自动启动文件。启动时使用临时 systemd 用户单元，让后台服务在 SSH 断开后继续运行。卸载时，先停止 UU，再自行删除安装目录。
 
 配置选项、运行架构、验收记录和限制见 [SteamOS 适配说明](docs/steamos-proton.md)。
+
+已审核的 Proton 11 与 UU 4.42.0.2770 支持安装目录内的 H.264 硬解兼容副本。桌面模式已验证 DX11VA、GPU 视频解码计数、正常画面及约 60 fps；启动器根据主机当前显示刷新率修正 Wine 虚拟显示报告 0 Hz 导致的 30 帧限制。用户也已确认游戏模式运行正常并达到 60 fps。兼容副本不会修改 Steam 的 Proton 文件。
 
 音频转发已禁用。本分支不支持剪贴板、文件传输、远程终端和多显示器。游戏模式采集 gamescope 合成后的画面，包括 Steam 界面和当前获得焦点的游戏。UU 管理窗口、远端设备桌面窗口及其弹窗归属于现有 Steam 快捷方式的应用 ID。
 
