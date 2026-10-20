@@ -255,7 +255,9 @@ def serve():
         password = password_file.read_text().strip()
         if listening(rdp_port):
             raise RuntimeError(f'Loopback port {rdp_port} is already occupied.')
-        krdp_version = run(['pacman', '-Q', 'krdp'], physical_env).stdout.decode().strip()
+        krdp_version = subprocess.run(['pacman', '-Q', 'krdp'], env=physical_env,
+            check=True, timeout=30, stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE).stdout.decode().strip()
         if not krdp_version.startswith('krdp 6.4.3-'):
             raise RuntimeError(f'KRDP input shim requires reviewed 6.4.3; found {krdp_version}')
         spawn('krdp', ['krdpserver', '--plasma', '--monitor', monitor, '--address', '127.0.0.1', '--port', str(rdp_port),

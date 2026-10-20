@@ -13,7 +13,8 @@ def sha256(data):
 
 
 def reviewed(data, expected, name):
-    if sha256(data) != expected:
+    approved = (expected,) if isinstance(expected, str) else expected
+    if sha256(data) not in approved:
         raise RuntimeError(f'Unreviewed {name}; refusing video compatibility patches.')
 
 

@@ -152,6 +152,28 @@ class SteamOSStorageTests(unittest.TestCase):
 
 
 class SteamOSSandboxTests(unittest.TestCase):
+    def test_krdp_version_query_ignores_pacman_configuration_warnings(self):
+        tree = ast.parse((ROOT / 'scripts/uu-steamos-session.py').read_text())
+        serve = next(item for item in tree.body if isinstance(item, ast.FunctionDef)
+                     and item.name == 'serve')
+        query = next(item for item in ast.walk(serve) if isinstance(item, ast.Assign)
+                     and any(isinstance(target, ast.Name) and target.id == 'krdp_version'
+                             for target in item.targets))
+        run = next(item for item in tree.body if isinstance(item, ast.FunctionDef)
+                   and item.name == 'run')
+        with tempfile.TemporaryDirectory(dir=ROOT) as directory:
+            root = Path(directory)
+            pacman = root / 'pacman'
+            pacman.write_text('#!/bin/sh\n'
+                'echo "warning: config file /etc/pacman.conf: unrecognized directive" >&2\n'
+                'echo "krdp 6.4.3-1"\n')
+            pacman.chmod(0o700)
+            namespace = {'subprocess': subprocess, 'root': root, 'app': root,
+                         'physical_env': {**os.environ, 'PATH': directory}}
+            exec(compile(ast.Module(body=[run, query], type_ignores=[]),
+                         '<krdp-version-query>', 'exec'), namespace)
+        self.assertEqual(namespace['krdp_version'], 'krdp 6.4.3-1')
+
     def test_nested_display_uses_private_bus_and_child_assigned_xwayland(self):
         from unittest.mock import Mock
         tree = ast.parse((ROOT / 'scripts/uu-steamos-session.py').read_text())

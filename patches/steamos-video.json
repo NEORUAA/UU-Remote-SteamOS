@@ -9,7 +9,10 @@
     "original": "bb1e000000"
   },
   "d3d11": {
-    "sha256": "b48b763bc1b9fdab46e084a0a806175ca4c0f932ac25c0c86f482a4ebecd5bc8",
+    "sha256": [
+      "b48b763bc1b9fdab46e084a0a806175ca4c0f932ac25c0c86f482a4ebecd5bc8",
+      "28aa0d393cfc2305319cbbe78dde25b0ca82ab7491e4493b73a01f0f2c83fef6"
+    ],
     "patches": [
       {
         "name": "d3d11_video_device_CheckVideoDecoderFormat",
@@ -35,7 +38,10 @@
     ]
   },
   "wined3d": {
-    "sha256": "28ecf236d1834840099e9a6a6647f38d604285098f3a88f5aada94eebd2df73a",
+    "sha256": [
+      "28ecf236d1834840099e9a6a6647f38d604285098f3a88f5aada94eebd2df73a",
+      "147d540fa155a1d997ba6aa2345f3766dd58d5550a3b48d5a9c2900b950d6f01"
+    ],
     "file_offset": 1180192,
     "original": "5c000000500000000200000002000000",
     "replacement": "5b0000004f0000000200000002000000"

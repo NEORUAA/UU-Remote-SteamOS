@@ -97,6 +97,13 @@ class VideoPatchTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, 'Unexpected'):
             video.patch_bytes(data, spec, 'fixture')
 
+    def test_reviewed_proton_rebuilds_require_an_exact_approved_hash(self):
+        approved = [video.sha256(b'first build'), video.sha256(b'second build')]
+        for data in (b'first build', b'second build'):
+            video.reviewed(data, approved, 'Proton fixture')
+        with self.assertRaisesRegex(RuntimeError, 'Unreviewed'):
+            video.reviewed(b'second build changed', approved, 'Proton fixture')
+
     def test_native_queries_are_tied_to_the_reviewed_source(self):
         manifest = json.loads((ROOT / 'patches/steamos-video.json').read_text())
         self.assertEqual(manifest['helper_source_sha256'],
